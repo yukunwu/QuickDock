@@ -1,0 +1,10 @@
+.DS_Store
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/test-results/
+frontend/playwright-report/
+bin/
+*.log
+docs/HANDOFF.md
+docs/validation/

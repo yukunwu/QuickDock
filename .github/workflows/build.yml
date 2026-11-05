@@ -1,0 +1,126 @@
+name: Build and release
+on:
+  push:
+    branches: [online, main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Validate release tag
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
+          fi
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - run: pnpm --dir frontend build && pnpm --dir frontend test
+      - run: go test -race ./...
+        env:
+          MACOSX_DEPLOYMENT_TARGET: '13.0'
+          CGO_CFLAGS: '-mmacosx-version-min=13.0'
+          CGO_LDFLAGS: '-mmacosx-version-min=13.0'
+      - run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+      - run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.45.2
+      - run: ./scripts/build-macos.sh && ./scripts/build-platforms.sh
+      - run: python3 scripts/package-platforms.py
+      - name: Verify update archives and checksums
+        run: python3 scripts/check-release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quickdock-all-platforms
+          path: |
+            bin/releases/*.zip
+            bin/releases/*.deb
+            bin/releases/*.rpm
+            bin/releases/SHA256SUMS.txt
+  linux-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir frontend install --frozen-lockfile && pnpm --dir frontend build
+      - run: sudo apt-get update && sudo apt-get install -y libgtk-3-0 libwebkit2gtk-4.1-0 libglib2.0-bin xdg-utils dbus-x11 xvfb openbox xdotool
+      - run: go test -tags 'purego,gtk3' ./...
+      - run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.45.2
+      - name: Build both Linux architectures
+        run: |
+          mkdir -p bin/cross
+          for arch in amd64 arm64; do
+            label=$arch; test "$arch" != amd64 || label=x64
+            GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -tags 'production,purego,gtk3' -ldflags="-s -w -X quickdock/internal/core.Version=$(cat VERSION)" -o bin/cross/quickdock-linux-$label .
+          done
+      - run: python3 scripts/package-platforms.py --platform linux
+      - run: sudo apt-get install -y ./bin/releases/QuickDock-$(cat VERSION)-linux-$(test "$(uname -m)" = aarch64 && echo arm64 || echo x64).deb
+      - run: ./scripts/test-linux-desktop.sh /usr/bin/quickdock
+      - run: ./scripts/test-linux-google.sh
+  windows-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - run: pnpm --dir frontend build
+      - run: go test ./...
+      - run: go build -tags production -ldflags '-H windowsgui' -o bin/QuickDock.exe .
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, linux-test, windows-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: quickdock-all-platforms
+          path: release
+      - name: Publish all platforms together
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd release
+          sha256sum -c SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" ./* --repo "$GITHUB_REPOSITORY" --verify-tag --title "QuickDock $GITHUB_REF_NAME" --generate-notes

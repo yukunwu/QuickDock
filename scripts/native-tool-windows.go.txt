@@ -1,0 +1,73 @@
+// Run via a Go overlay replacing main.go; keeps production services/bindings and
+// uses isolated temporary data, no global shortcut or production single instance.
+package main
+
+import (
+ "embed"
+ "encoding/json"
+ "fmt"
+ "net/http"
+ "os"
+ "strings"
+ "sync/atomic"
+ "time"
+ "github.com/wailsapp/wails/v3/pkg/application"
+ "github.com/wailsapp/wails/v3/pkg/events"
+)
+//go:embed all:frontend/dist
+var assets embed.FS
+
+type probeTransport struct{calls *atomic.Int32}
+func (p probeTransport) RoundTrip(*http.Request)(*http.Response,error){p.calls.Add(1);return nil,fmt.Errorf("unexpected network request")}
+func main(){
+ dir:=os.Getenv("QUICKDOCK_PROBE_DIR");if dir==""{panic("isolated data directory required")}
+ s:=newService(dir)
+ app:=application.New(application.Options{Name:"QuickDock Window Probe",Services:[]application.Service{application.NewService(s)},ShouldQuit:s.prepareToolQuit,Assets:application.AssetOptions{Handler:application.BundledAssetFileServer(assets)},Mac:application.MacOptions{ActivationPolicy:application.ActivationPolicyAccessory}})
+ s.app=app;s.shortcuts=app.GlobalShortcut
+ s.window=app.Window.NewWithOptions(application.WebviewWindowOptions{Title:"QuickDock Probe Launcher",Name:"probe-launcher",URL:"/",Width:780,Height:340,Hidden:true})
+ var calls atomic.Int32;translationClient=&http.Client{Transport:probeTransport{&calls}}
+ fail:=func(message string){fmt.Println("FAIL",message);os.Exit(1)}
+ wait:=func(label string,check func()bool){deadline:=time.Now().Add(25*time.Second);for !check(){if time.Now().After(deadline){fail("timeout "+label)};time.Sleep(50*time.Millisecond)}}
+ get:=func(id string)*application.WebviewWindow{s.toolMu.Lock();defer s.toolMu.Unlock();if t:=s.toolWindows[id];t!=nil{return t.window};return nil}
+ input:=func(w *application.WebviewWindow,selector,value string,after string){q,_:=json.Marshal(selector);v,_:=json.Marshal(value);w.ExecJS(fmt.Sprintf(`(()=>{const timer=setInterval(()=>{const el=document.querySelector(%s);if(!el)return;clearInterval(timer);Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(el,%s);el.dispatchEvent(new Event('input',{bubbles:true}));setTimeout(()=>{%s},0);},25)})()`,q,v,after))}
+ has:=func(id,value string)bool{state,err:=s.ToolWindowState(id);return err==nil&&strings.Contains(state.Session,value)}
+ app.Event.OnApplicationEvent(events.Common.ApplicationStarted,func(_ *application.ApplicationEvent){go func(){
+  if os.Getenv("QUICKDOCK_PROBE_RESTORE")=="1"{
+   s.restoreToolWindows()
+   wait("restore window",func()bool{return get("text")!=nil})
+   w:=get("text");input(w,`[aria-label="工具输入"]`,"restored-and-edited","")
+   wait("restored edit",func()bool{return has("text","restored-and-edited")})
+   if calls.Load()!=0{fail("restore sent translation")}
+   fmt.Println("PASS restart restores open window, native bridge editable, no translation network")
+   app.Quit();return
+  }
+  if err:=s.OpenToolWindow("text",`{"version":1}`);err!=nil{fail(err.Error())}
+  w:=get("text")
+  if err:=s.OpenToolWindow("calculator",`{"version":1}`);err!=nil{fail(err.Error())}
+  c:=get("calculator")
+  input(w,`[aria-label="工具输入"]`,"native-persistent-draft","")
+  input(c,`[aria-label="工具输入"]`,"123+456","")
+  wait("translation saved",func()bool{return has("text","native-persistent-draft")})
+  wait("notebook saved",func()bool{return has("calculator","123+456")})
+  s.Hide()
+  if !w.IsVisible()||!c.IsVisible(){fail("Dock hide hid independent window")}
+  if err:=s.OpenToolWindow("text",`{"version":1}`);err!=nil{fail(err.Error())}
+  if get("text")!=w||!has("text","native-persistent-draft"){fail("reuse replaced input")}
+  c.SetSize(1020,720);c.SetPosition(100,120)
+  input(c,`[aria-label="工具输入"]`,"789+1","")
+  time.Sleep(60*time.Millisecond);c.Close()
+  wait("close hook flushed",func()bool{return get("calculator")==nil})
+  if !has("calculator","789+1"){fail("close lost last keystroke")}
+  state,_:=s.ToolWindowState("calculator");if state.Open||state.Width!=1020||state.Height!=720{fail(fmt.Sprintf("geometry/open %+v",state))}
+  if calls.Load()!=0{fail("input triggered translation network")}
+  fmt.Println("PASS native two windows, Dock hide isolation, reuse, autosave, close flush, geometry")
+  input(w,`[aria-label="工具输入"]`,"quit-flush-draft",`window.dispatchEvent(new Event('quickdock-probe-quit'))`)
+  // Wait for React change delivery, then normal AppKit quit must flush the page.
+  time.Sleep(60*time.Millisecond)
+  app.Quit()
+ }()})
+ go func(){time.Sleep(60*time.Second);fail("whole probe timeout")}()
+ if err:=app.Run();err!=nil{fail(err.Error())}
+ if os.Getenv("QUICKDOCK_PROBE_RESTORE")!="1" && !has("text","quit-flush-draft"){fail("quit lost draft")}
+ fmt.Println("PASS normal exit saved active window for restart")
+}

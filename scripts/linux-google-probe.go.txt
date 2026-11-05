@@ -1,0 +1,59 @@
+// Built through Go overlay by test-linux-google.sh; never included in production.
+package main
+import (
+ "embed"
+ "encoding/json"
+ "fmt"
+ "os"
+ "strings"
+ "os/exec"
+ "time"
+ "quickdock/internal/platform"
+ "github.com/wailsapp/wails/v3/pkg/application"
+ "github.com/wailsapp/wails/v3/pkg/events"
+)
+//go:embed all:frontend/dist
+var assets embed.FS
+func main(){
+ s:=newService(os.Getenv("QUICKDOCK_PROBE_DIR"))
+ app:=application.New(application.Options{Name:"QuickDock Google Probe",Services:[]application.Service{application.NewService(s)},Assets:application.AssetOptions{Handler:application.BundledAssetFileServer(assets)}})
+ s.app=app;s.shortcuts=app.GlobalShortcut
+ s.window=app.Window.NewWithOptions(application.WebviewWindowOptions{Title:"QuickDock Probe Launcher",Name:"probe-launcher",URL:"/",Width:780,Height:340,Hidden:true})
+ fail:=func(msg string){fmt.Println("FAIL",msg);os.Exit(1)}
+ app.Event.OnApplicationEvent(events.Common.ApplicationStarted,func(_ *application.ApplicationEvent){go func(){
+  if err:=s.OpenToolWindow("translate","");err!=nil{fail(err.Error())}
+  var w *application.WebviewWindow
+  deadline:=time.Now().Add(30*time.Second)
+  for time.Now().Before(deadline){
+   s.toolMu.Lock();if t:=s.toolWindows["translate"];t!=nil{w=t.window};s.toolMu.Unlock()
+   attached:=false;if w!=nil{application.InvokeSync(func(){attached=platform.GoogleProbeStatus(w.NativeWindow())!="detached"})};if attached{break};time.Sleep(100*time.Millisecond)
+  }
+  if w==nil{fail("no window")}
+  // Exercise the real remote WebKit with a non-Google fixture.
+  // Its draft messages must be rejected without depending on internet.
+  fixture:=`data:text/html,<textarea id="remote">fixture</textarea><script>setTimeout(()=>window.webkit.messageHandlers.quickdockGoogleDraft.postMessage(JSON.stringify({text:'untrusted',source:'en',target:'zh-CN'})),200)</script>`
+  application.InvokeSync(func(){platform.GoogleProbeLoad(w.NativeWindow(),fixture)})
+  time.Sleep(time.Second)
+  if raw,_:=os.ReadFile(os.Getenv("QUICKDOCK_PROBE_DIR")+"/tool-windows/google-page.json");strings.Contains(string(raw),"untrusted"){fail("non-Google page wrote draft")}
+  fmt.Println("PASS Linux isolated Google WebKit created; non-Google messages rejected")
+  for i:=0;i<8;i++{
+   if err:=s.GoogleTranslationPage("translate","hello","en","zh-CN","submit",map[string]float64{"x":8,"y":60,"width":900,"height":500});err!=nil{fail(err.Error())}
+   if err:=s.GoogleTranslationPage("translate","","auto","zh-CN","detach",nil);err!=nil{fail(err.Error())}
+   detached:=false;application.InvokeSync(func(){detached=platform.GoogleProbeStatus(w.NativeWindow())=="detached"});if !detached{fail("page retained")}
+  }
+  raw,err:=os.ReadFile(os.Getenv("QUICKDOCK_PROBE_DIR")+"/tool-windows/google-page.json");var state map[string]string;if err!=nil||json.Unmarshal(raw,&state)!=nil||state["text"]!="hello"{fail("draft not saved")}
+  fmt.Println("PASS Linux 8 attach/submit/detach cycles and draft persistence")
+  if err:=s.GoogleTranslationPage("translate","hello","en","zh-CN","attach",map[string]float64{"x":8,"y":60,"width":900,"height":500});err!=nil{fail(err.Error())}
+  time.Sleep(300*time.Millisecond)
+  // A physical X11 click in the toolbar must reach the local Wails view.
+  out,err:=exec.Command("xdotool","search","--name","翻译 · QuickDock").Output();if err!=nil{fail("find toolbar window: "+err.Error())}
+  id:=strings.Fields(string(out))[0]
+  if err:=exec.Command("xdotool","mousemove","--window",id,"26","25","click","1").Run();err!=nil{fail(err.Error())}
+  deadline=time.Now().Add(5*time.Second)
+  for time.Now().Before(deadline){s.toolMu.Lock();closed:=s.toolWindows["translate"]==nil;s.toolMu.Unlock();if closed{fmt.Println("PASS physical toolbar click passes beside remote WebKit and closes window");app.Quit();return};time.Sleep(100*time.Millisecond)}
+  fail("toolbar click intercepted or close failed")
+  app.Quit()
+ }()})
+ go func(){time.Sleep(60*time.Second);fail("probe timeout")}()
+ if err:=app.Run();err!=nil{fail(err.Error())}
+}

@@ -1,0 +1,16 @@
+version: '3'
+tasks:
+  build:
+    cmds:
+      - ./scripts/build-macos.sh
+  build-all:
+    cmds:
+      - ./scripts/build-platforms.sh
+      - python3 scripts/package-platforms.py
+  test:
+    cmds:
+      - go test ./...
+      - pnpm --dir frontend test
+  dev:
+    cmds:
+      - pnpm --dir frontend dev
