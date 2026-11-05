@@ -118,7 +118,7 @@ test("settings persistence, disable and screenshot stable workspace", async ({
   await page.getByRole("button", { name: "偏好设置" }).click();
   await page.getByRole("button", { name: "深色", exact: true }).click();
   await page.getByRole("switch", { name: "启用计算稿纸" }).click();
-  await expect(page.getByRole("status")).toContainText("设置已保存");
+  await expect(page.locator(".toast[role=status]")).toContainText("设置已保存");
   await expect(
     page.getByRole("button", { name: "保存", exact: true }),
   ).toBeEnabled();
