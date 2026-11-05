@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { defaultShortcut } from "./platform";
 import {
   Calculator,
@@ -44,8 +45,12 @@ export interface ToolDefinition {
 export const tools: ToolDefinition[] = [
   {
     id: "translate",
-    name: "翻译",
-    subtitle: "Google网页翻译，支持独立窗口",
+    get name() {
+      return t("翻译");
+    },
+    get subtitle() {
+      return t("Google网页翻译，支持独立窗口");
+    },
     keywords: "translate translation fanyi fy 翻译",
     category: "日常",
     icon: Languages,
@@ -54,8 +59,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "calculator",
-    name: "计算稿纸",
-    subtitle: "多行算式、逐行结果与历史记录",
+    get name() {
+      return t("计算稿纸");
+    },
+    get subtitle() {
+      return t("多行算式、逐行结果与历史记录");
+    },
     keywords: "calc jisuanqi jsq math 计算器 jisuangaozhi 计算稿纸 jsgz",
     category: "日常",
     icon: Calculator,
@@ -64,8 +73,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "json",
-    name: "JSON 格式化",
-    subtitle: "复杂的数据，一目了然",
+    get name() {
+      return t("JSON 格式化");
+    },
+    get subtitle() {
+      return t("格式化、压缩，保留大整数");
+    },
     keywords: "json format geshihua gsh",
     category: "开发",
     icon: Braces,
@@ -74,8 +87,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "timestamp",
-    name: "时间戳转换",
-    subtitle: "时间与数字，自由转换",
+    get name() {
+      return t("时间戳转换");
+    },
+    get subtitle() {
+      return t("日期与秒、毫秒时间戳互转");
+    },
     keywords: "timestamp time shijianchuo sjc",
     category: "开发",
     icon: Clock3,
@@ -84,8 +101,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "base64",
-    name: "Base64",
-    subtitle: "文本编码与解码",
+    get name() {
+      return t("Base64");
+    },
+    get subtitle() {
+      return t("文本编码与解码");
+    },
     keywords: "base64 encode decode bianma",
     category: "开发",
     icon: Binary,
@@ -94,8 +115,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "url",
-    name: "URL 编解码",
-    subtitle: "轻松处理 URL 特殊字符",
+    get name() {
+      return t("URL 编解码");
+    },
+    get subtitle() {
+      return t("URL 组件编码与解码");
+    },
     keywords: "url encode decode bianjiema",
     category: "开发",
     icon: Link,
@@ -104,8 +129,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "uuid",
-    name: "UUID 生成",
-    subtitle: "为每个想法，生成唯一标识",
+    get name() {
+      return t("UUID 生成");
+    },
+    get subtitle() {
+      return t("生成单个或批量 UUID v4");
+    },
     keywords: "uuid id suiji",
     category: "开发",
     icon: Fingerprint,
@@ -114,8 +143,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "hash",
-    name: "文本哈希",
-    subtitle: "快速计算文本摘要",
+    get name() {
+      return t("文本哈希");
+    },
+    get subtitle() {
+      return t("MD5、SHA-1、SHA-256、SHA-512");
+    },
     keywords: "hash md5 sha wenbenhaxi",
     category: "开发",
     icon: Hash,
@@ -124,8 +157,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "units",
-    name: "单位换算",
-    subtitle: "从千米到字节，准确换算",
+    get name() {
+      return t("单位换算");
+    },
+    get subtitle() {
+      return t("长度、质量、温度与数据容量");
+    },
     keywords: "unit convert danweihuansuan dwhs",
     category: "日常",
     icon: Ruler,
@@ -134,8 +171,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "text",
-    name: "文本处理",
-    subtitle: "整理文字，专注内容",
+    get name() {
+      return t("文本处理");
+    },
+    get subtitle() {
+      return t("大小写、去重与逐行整理");
+    },
     keywords: "text wenbenchuli wbcl",
     category: "日常",
     icon: CaseSensitive,
@@ -144,8 +185,12 @@ export const tools: ToolDefinition[] = [
   },
   {
     id: "bookmarks",
-    name: "常用网址",
-    subtitle: "收藏的目的地，一步直达",
+    get name() {
+      return t("常用网址");
+    },
+    get subtitle() {
+      return t("保存网址，通过名称或别名打开");
+    },
     keywords: "bookmark website wangzhi wz",
     category: "日常",
     icon: Globe,
@@ -168,6 +213,7 @@ export interface Bookmark {
 }
 export interface Settings {
   version: number;
+  language?: "system" | "zh-CN" | "zh-TW" | "en" | "ja" | "es";
   theme: "system" | "dark" | "light";
   shortcut: string;
   disabledTools: string[];
@@ -205,6 +251,7 @@ export const fallbackIcons: Record<string, LucideIcon> = {
 export const genericAppIcon = Command;
 export const defaults: Settings = {
   version: 1,
+  language: "system",
   theme: "system",
   shortcut: defaultShortcut,
   disabledTools: [],
@@ -213,25 +260,33 @@ export const defaults: Settings = {
 export const previewApps: AppEntry[] = [
   {
     id: "preview-finder",
-    name: "Finder",
+    get name() {
+      return t("Finder");
+    },
     path: "/System/Library/CoreServices/Finder.app",
     bundleId: "com.apple.finder",
   },
   {
     id: "preview-safari",
-    name: "Safari",
+    get name() {
+      return t("Safari");
+    },
     path: "/Applications/Safari.app",
     bundleId: "com.apple.Safari",
   },
   {
     id: "preview-code",
-    name: "Visual Studio Code",
+    get name() {
+      return t("Visual Studio Code");
+    },
     path: "/Applications/Visual Studio Code.app",
     bundleId: "com.microsoft.VSCode",
   },
   {
     id: "preview-terminal",
-    name: "Terminal",
+    get name() {
+      return t("Terminal");
+    },
     path: "/System/Applications/Utilities/Terminal.app",
     bundleId: "com.apple.Terminal",
   },
@@ -240,8 +295,12 @@ export const previewApps: AppEntry[] = [
 export const launcherActions = [
   {
     id: "google",
-    name: "Google 搜索",
-    subtitle: "无应用匹配时，用默认浏览器搜索",
+    get name() {
+      return t("Google 搜索");
+    },
+    get subtitle() {
+      return t("无应用匹配时，用默认浏览器搜索");
+    },
     icon: Search,
     color: "blue",
   },

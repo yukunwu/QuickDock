@@ -17,11 +17,12 @@ type windowsGoogle struct {
 	child   uintptr
 	path    string
 	state   googleState
+	escape  func()
 }
 
 var windowsGooglePages = map[uintptr]*windowsGoogle{}
 
-func AttachGooglePage(window unsafe.Pointer, path, raw string) error {
+func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) error {
 	var options googleOptions
 	if err := json.Unmarshal([]byte(raw), &options); err != nil {
 		return err
@@ -38,7 +39,7 @@ func AttachGooglePage(window unsafe.Pointer, path, raw string) error {
 		browser := edge.NewChromium()
 		data, _ := os.UserCacheDir()
 		browser.DataPath = filepath.Join(data, "QuickDock", "GoogleWebView2")
-		page = &windowsGoogle{browser: browser, child: child, path: path, state: loadGoogleState(path, options)}
+		page = &windowsGoogle{browser: browser, child: child, path: path, state: loadGoogleState(path, options), escape: onEscape}
 		if !browser.Embed(child) {
 			user32.NewProc("DestroyWindow").Call(child)
 			return errors.New("Google网页无法启动，请安装Microsoft Edge WebView2 Runtime")
@@ -48,6 +49,15 @@ func AttachGooglePage(window unsafe.Pointer, path, raw string) error {
 		browser.MessageCallback = func(raw string, _ *edge.ICoreWebView2, args *edge.ICoreWebView2WebMessageReceivedEventArgs) {
 			source, err := args.GetSource()
 			if err != nil || !strings.HasPrefix(source, "https://translate.google.com/") {
+				return
+			}
+			var action struct {
+				Action string `json:"action"`
+			}
+			if len(raw) < 100*1024 && json.Unmarshal([]byte(raw), &action) == nil && action.Action == "escape" {
+				if page.escape != nil {
+					page.escape()
+				}
 				return
 			}
 			var state googleState

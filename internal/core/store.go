@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"quickdock/internal/i18n"
 	"runtime"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ type Bookmark struct {
 }
 type Settings struct {
 	Version       int        `json:"version"`
+	Language      string     `json:"language,omitempty"`
 	Theme         string     `json:"theme"`
 	Shortcut      string     `json:"shortcut"`
 	DisabledTools []string   `json:"disabledTools"`
@@ -52,6 +54,9 @@ func Defaults() State {
 func Validate(s Settings) error {
 	if s.Version != 1 {
 		return errors.New("不支持的设置版本")
+	}
+	if !i18n.Valid(s.Language) {
+		return errors.New("不支持的界面语言")
 	}
 	if s.Theme != "system" && s.Theme != "light" && s.Theme != "dark" {
 		return errors.New("无效主题")

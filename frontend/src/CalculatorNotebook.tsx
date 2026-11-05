@@ -1,3 +1,4 @@
+import { errorText, t, getLanguage, useLocale } from "./i18n";
 import { commandLabel } from "./platform";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -13,7 +14,7 @@ import ToolWindowButton from "./ToolWindowButton";
 import * as bridge from "./bridge";
 import { drafts } from "./toolSession";
 import { calculateSheet, type Calculation } from "./tools/notebook";
-const example = "# 本月预算\n128 + 64\nans * 15%";
+const example = () => t("# 本月预算") + "\n128 + 64\nans * 15%";
 export default function CalculatorNotebook({
   back,
   notify,
@@ -21,8 +22,9 @@ export default function CalculatorNotebook({
   back: () => void;
   notify: (s: string) => void;
 }) {
+  useLocale();
   const [source, setSource] = useState(
-    () => drafts.get("calculator")?.input ?? example,
+    () => drafts.get("calculator")?.input ?? example(),
   );
   const [records, setRecords] = useState<Calculation[]>([]),
     [historyOpen, setHistoryOpen] = useState(false),
@@ -54,7 +56,7 @@ export default function CalculatorNotebook({
         if (active) setRecords(rows);
       })
       .catch((e) => {
-        if (active) setError(String(e));
+        if (active) setError(errorText(e));
       });
     return () => {
       active = false;
@@ -71,9 +73,9 @@ export default function CalculatorNotebook({
           lines.map((l) => l.result),
         ),
       );
-      notify("已保存到计算历史");
+      notify(t("已保存到计算历史"));
     } catch (e) {
-      setError(String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -89,7 +91,7 @@ export default function CalculatorNotebook({
         setConfirmClear(false);
       }
     } catch (e) {
-      setError(String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -97,15 +99,15 @@ export default function CalculatorNotebook({
   return (
     <section className="workspace notebook-workspace">
       <div className="workspace-header">
-        <button className="icon-button" aria-label="返回" onClick={back}>
+        <button className="icon-button" aria-label={t("返回")} onClick={back}>
           <ArrowLeft size={19} />
         </button>
         <span className="item-icon orange">
           <NotebookPen size={22} />
         </span>
         <div>
-          <h2>计算稿纸</h2>
-          <p>把想法写下来，结果自然出现</p>
+          <h2>{t("计算稿纸")}</h2>
+          <p>{t("多行算式、逐行结果与历史记录")}</p>
         </div>
         <ToolWindowButton id="calculator" notify={notify} />
         <button
@@ -117,7 +119,7 @@ export default function CalculatorNotebook({
           aria-expanded={historyOpen}
         >
           <History size={15} />
-          历史记录 {records.length}
+          {t("历史记录")} {records.length}
         </button>
         <button
           className="primary"
@@ -125,14 +127,14 @@ export default function CalculatorNotebook({
           onClick={() => void save()}
         >
           <Save size={15} />
-          保存记录
+          {t("保存记录")}
         </button>
       </div>
       <div className="workspace-options">
-        <span className="tag">本地计算</span>
-        <span>一行一个算式 · # 备注 · ans 上一个结果</span>
+        <span className="tag">{t("本地计算")}</span>
+        <span>{t("一行一个算式 · # 备注 · ans 上一个结果")}</span>
         <button className="secondary" onClick={() => remember("")}>
-          新稿纸
+          {t("新稿纸")}
         </button>
         <button
           className="secondary"
@@ -147,35 +149,38 @@ export default function CalculatorNotebook({
                   )
                   .join("\n"),
               )
-              .then(() => notify("稿纸已复制"))
-              .catch((e) => notify(String(e)))
+              .then(() => notify(t("稿纸已复制")))
+              .catch((e) => notify(errorText(e)))
           }
         >
           <Copy size={14} />
-          复制稿纸
+          {t("复制稿纸")}
         </button>
       </div>
       {error && (
         <div className="inline-warning" role="alert">
-          {error}
+          {errorText(error)}
         </div>
       )}
       <div className="notebook-body">
         <div className="notebook-paper">
           <div className="notebook-labels">
             <span>
-              稿纸 <small>{commandLabel} Enter 保存记录</small>
+              {t("稿纸")}{" "}
+              <small>
+                {commandLabel} {t("Enter 保存记录")}
+              </small>
             </span>
-            <span>计算结果</span>
+            <span>{t("计算结果")}</span>
           </div>
           <div className="notebook-columns">
             <textarea
-              aria-label="工具输入"
+              aria-label={t("工具输入")}
               spellCheck={false}
               wrap="off"
               maxLength={20000}
               value={source}
-              placeholder={"# 旅行预算\n1200 + 800\nans / 2"}
+              placeholder={t("# 旅行预算") + "\n1200 + 800\nans / 2"}
               onChange={(e) => remember(e.target.value)}
               onScroll={(e) => {
                 if (outputRef.current)
@@ -195,59 +200,64 @@ export default function CalculatorNotebook({
             />
             <div
               className="notebook-results"
-              aria-label="工具结果"
+              aria-label={t("工具结果")}
               ref={outputRef}
             >
               {lines.map((line, i) => (
                 <div
                   key={i}
                   className={line.error ? "output-error" : ""}
-                  title={line.error || line.result}
+                  title={line.error ? errorText(line.error) : line.result}
                 >
-                  {line.error || line.result || " "}
+                  {line.error ? errorText(line.error) : line.result || " "}
                 </div>
               ))}
             </div>
           </div>
         </div>
         {historyOpen && (
-          <aside className="calculation-history" aria-label="计算历史">
+          <aside className="calculation-history" aria-label={t("计算历史")}>
             <div className="history-heading">
-              <strong>历史计算</strong>
+              <strong>{t("历史计算")}</strong>
               <button
                 className="icon-button"
-                aria-label="关闭历史记录"
+                aria-label={t("关闭历史记录")}
                 onClick={() => setHistoryOpen(false)}
               >
                 <X size={15} />
               </button>
             </div>
-            <p>保存在本机 · 最近100份</p>
+            <p>{t("保存在本机 · 最近100份")}</p>
             <div className="history-list">
               {!records.length ? (
                 <div className="empty">
-                  还没有记录
+                  {t("还没有记录")}
                   <br />
-                  保存一张稿纸，从这里继续。
+                  {t("保存一张稿纸，从这里继续。")}
                 </div>
               ) : (
                 records.map((record) => (
                   <article key={record.id}>
                     <button
                       className="history-load"
-                      aria-label={`载入记录 ${record.source.split("\n")[0]}`}
+                      aria-label={t("载入记录 {name}", {
+                        name: record.source.split("\n")[0],
+                      })}
                       onClick={() => {
                         remember(record.source);
-                        notify("已载入稿纸");
+                        notify(t("已载入稿纸"));
                       }}
                     >
                       <time>
-                        {new Date(record.createdAt).toLocaleString("zh-CN", {
-                          month: "2-digit",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(record.createdAt).toLocaleString(
+                          getLanguage(),
+                          {
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}
                       </time>
                       <strong>
                         {record.source
@@ -259,7 +269,9 @@ export default function CalculatorNotebook({
                     </button>
                     <button
                       className="icon-button"
-                      aria-label={`删除记录 ${record.source.split("\n")[0]}`}
+                      aria-label={t("删除记录 {name}", {
+                        name: record.source.split("\n")[0],
+                      })}
                       disabled={busy}
                       onClick={() => void remove(record.id)}
                     >
@@ -273,19 +285,19 @@ export default function CalculatorNotebook({
               <div className="history-clear">
                 {confirmClear ? (
                   <>
-                    <span>清空全部历史？此操作不可恢复。</span>
+                    <span>{t("清空全部历史？此操作不可恢复。")}</span>
                     <button
                       className="secondary"
                       disabled={busy}
                       onClick={() => void remove()}
                     >
-                      确认清空历史
+                      {t("确认清空历史")}
                     </button>
                     <button
                       className="secondary"
                       onClick={() => setConfirmClear(false)}
                     >
-                      取消
+                      {t("取消")}
                     </button>
                   </>
                 ) : (
@@ -293,7 +305,7 @@ export default function CalculatorNotebook({
                     className="secondary"
                     onClick={() => setConfirmClear(true)}
                   >
-                    清空历史
+                    {t("清空历史")}
                   </button>
                 )}
               </div>
@@ -302,11 +314,12 @@ export default function CalculatorNotebook({
         )}
       </div>
       <div className="workspace-note">
-        {source.split("\n").length} / 200 行 · {source.length} / 20000 字符
+        {source.split("\n").length} {t("/ 200 行 ·")} {source.length}{" "}
+        {t("/ 20000 字符")}
         <span>
           {new URLSearchParams(location.search).has("tool")
-            ? "独立窗口自动保存稿纸；保存记录可另外保留历史版本。"
-            : "保存的历史重启后保留，未保存稿纸仅保留本次会话。"}
+            ? t("独立窗口自动保存稿纸；保存记录可另外保留历史版本。")
+            : t("保存的历史重启后保留，未保存稿纸仅保留本次会话。")}
         </span>
       </div>
     </section>

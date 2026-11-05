@@ -114,6 +114,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: quickdock-all-platforms
@@ -124,4 +125,9 @@ jobs:
         run: |
           cd release
           sha256sum -c SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" ./* --repo "$GITHUB_REPOSITORY" --verify-tag --title "QuickDock $GITHUB_REF_NAME" --generate-notes
+          notes="$GITHUB_WORKSPACE/docs/RELEASE-$GITHUB_REF_NAME.md"
+          if [[ -f "$notes" ]]; then
+            gh release create "$GITHUB_REF_NAME" ./* --repo "$GITHUB_REPOSITORY" --verify-tag --title "QuickDock $GITHUB_REF_NAME" --notes-file "$notes"
+          else
+            gh release create "$GITHUB_REF_NAME" ./* --repo "$GITHUB_REPOSITORY" --verify-tag --title "QuickDock $GITHUB_REF_NAME" --generate-notes
+          fi

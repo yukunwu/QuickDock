@@ -125,10 +125,10 @@ p {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #211b18;
-  background: linear-gradient(150deg, #ffbb84, #e8875b);
+  color: var(--accent);
+  background: transparent;
   border-radius: 10px;
-  box-shadow: inset 0 1px #ffffff50;
+  box-shadow: none;
   flex-shrink: 0;
 }
 .brand-caption {
@@ -1277,8 +1277,8 @@ footer b {
   letter-spacing: -0.2px;
 }
 .macos .brand-mark {
-  background: linear-gradient(145deg, #73b1ff, #007aff);
-  color: white;
+  background: transparent;
+  color: #f2a31f;
   width: 31px;
   height: 31px;
   border-radius: 8px;
@@ -1771,3 +1771,13 @@ footer b {
 .google-page-note {height:28px;flex-shrink:0;padding:7px 20px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);}
 .google-preview {padding:30px;color:var(--muted);}
 .google-preview textarea {width:100%;height:180px;padding:14px;}
+
+.shortcut-picker { display:flex; flex-direction:column; gap:8px; max-width:100%; }
+.shortcut-modifiers { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.shortcut-modifiers .active { background:var(--accent-soft); border-color:var(--accent); color:var(--text); }
+.setting-row { flex-wrap:wrap; gap:16px; }
+.setting-row select { max-width:100%; }
+html[lang="es"] .compact-kind { max-width:95px; }
+/* Allow translated navigation labels to wrap inside the fixed sidebar. */
+.macos .nav-item { white-space:normal; min-height:40px; height:auto; padding-top:9px; padding-bottom:9px; line-height:1.35; }
+.macos .nav-item > svg, .macos .nav-item > .count { flex-shrink:0; }

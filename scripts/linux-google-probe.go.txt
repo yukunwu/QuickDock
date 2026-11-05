@@ -15,7 +15,7 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 func main(){
- s:=newService(os.Getenv("QUICKDOCK_PROBE_DIR"))
+ s:=newService(os.Getenv("QUICKDOCK_PROBE_DIR"));s.state.Settings.Language="zh-CN"
  app:=application.New(application.Options{Name:"QuickDock Google Probe",Services:[]application.Service{application.NewService(s)},Assets:application.AssetOptions{Handler:application.BundledAssetFileServer(assets)}})
  s.app=app;s.shortcuts=app.GlobalShortcut
  s.window=app.Window.NewWithOptions(application.WebviewWindowOptions{Title:"QuickDock Probe Launcher",Name:"probe-launcher",URL:"/",Width:780,Height:340,Hidden:true})

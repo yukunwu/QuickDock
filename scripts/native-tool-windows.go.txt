@@ -10,6 +10,7 @@ import (
  "os"
  "strings"
  "sync/atomic"
+ "quickdock/internal/i18n"
  "time"
  "github.com/wailsapp/wails/v3/pkg/application"
  "github.com/wailsapp/wails/v3/pkg/events"
@@ -21,7 +22,7 @@ type probeTransport struct{calls *atomic.Int32}
 func (p probeTransport) RoundTrip(*http.Request)(*http.Response,error){p.calls.Add(1);return nil,fmt.Errorf("unexpected network request")}
 func main(){
  dir:=os.Getenv("QUICKDOCK_PROBE_DIR");if dir==""{panic("isolated data directory required")}
- s:=newService(dir)
+ s:=newService(dir);s.state.Settings.Language="zh-CN"
  app:=application.New(application.Options{Name:"QuickDock Window Probe",Services:[]application.Service{application.NewService(s)},ShouldQuit:s.prepareToolQuit,Assets:application.AssetOptions{Handler:application.BundledAssetFileServer(assets)},Mac:application.MacOptions{ActivationPolicy:application.ActivationPolicyAccessory}})
  s.app=app;s.shortcuts=app.GlobalShortcut
  s.window=app.Window.NewWithOptions(application.WebviewWindowOptions{Title:"QuickDock Probe Launcher",Name:"probe-launcher",URL:"/",Width:780,Height:340,Hidden:true})
@@ -55,12 +56,20 @@ func main(){
   if get("text")!=w||!has("text","native-persistent-draft"){fail("reuse replaced input")}
   c.SetSize(1020,720);c.SetPosition(100,120)
   input(c,`[aria-label="工具输入"]`,"789+1","")
-  time.Sleep(60*time.Millisecond);c.Close()
+  time.Sleep(60*time.Millisecond);c.ExecJS(`window.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape"}))`)
   wait("close hook flushed",func()bool{return get("calculator")==nil})
   if !has("calculator","789+1"){fail("close lost last keystroke")}
   state,_:=s.ToolWindowState("calculator");if state.Open||state.Width!=1020||state.Height!=720{fail(fmt.Sprintf("geometry/open %+v",state))}
   if calls.Load()!=0{fail("input triggered translation network")}
-  fmt.Println("PASS native two windows, Dock hide isolation, reuse, autosave, close flush, geometry")
+  fmt.Println("PASS native two windows, Dock hide isolation, reuse, autosave, Escape close flush, geometry")
+  menu:=app.NewMenu();item:=menu.Add("退出 QuickDock");s.localizedMenu=map[string]*application.MenuItem{"退出 QuickDock":item}
+  s.mu.Lock();s.state.Settings.Language="en";s.mu.Unlock();s.SyncUILanguage("en")
+  application.InvokeSync(func(){if item.Label()!=i18n.T("en","退出 QuickDock"){fail("native menu locale")}})
+  input(w,`[aria-label="Tool input"]`,"native-english-input","")
+  wait("English window without remount",func()bool{return has("text","native-english-input")})
+  s.mu.Lock();s.state.Settings.Language="zh-CN";s.mu.Unlock();s.SyncUILanguage("zh-CN")
+  fmt.Println("PASS native menu and existing independent window switch language without losing draft")
+
   input(w,`[aria-label="工具输入"]`,"quit-flush-draft",`window.dispatchEvent(new Event('quickdock-probe-quit'))`)
   // Wait for React change delivery, then normal AppKit quit must flush the page.
   time.Sleep(60*time.Millisecond)

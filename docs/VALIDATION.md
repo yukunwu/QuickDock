@@ -56,3 +56,34 @@
 6. 最新构建的连续多次唤起、全屏 Space 场景与端到端稳定绘制时延。
 
 这些是验收边界，不能描述成全部原生行为已经人工验收。代码、构建、十类工具与本地 `.app` 已交付，未做 Developer ID 签名、公证或发布。
+
+## 2026-11-05 多语言与本机安装
+
+- 33 个前端逻辑测试、macOS Go race 全量测试通过；22 个 Playwright 场景通过，含五语设置保存/重载、本地化工具错误、切换语言保留稿纸、固定 Space 修饰键选择和内存回收回归。
+- 隔离原生窗口探针通过：双窗口、自动保存、关闭最后输入 flush、正常退出/重启恢复；新增英文菜单及既有工具窗口语言切换验证。探针使用临时数据，不修改用户草稿。
+- PNG alpha 像素检查通过，512图含239605个完全透明像素，21621个不透明像素；ICNS与.app签名验证通过。
+- 960×660 中文/西班牙语布局截图见 `screenshots/14-local-settings-zh.png`、`15-local-settings-es.png`（浏览器预览，非原生截图）；西班牙语导航允许换行。
+- 本机从 Downloads 旧进程正常退出，安装至 `/Applications/QuickDock.app` 后启动，核对运行路径与构建主程序SHA256一致。保留用户设置、历史和独立草稿。版本沿用0.1.3，当前新增功能只在本机工作区/安装版，未打新tag或发布Release。
+- 安装后的实体快捷键 smoke 遇桌面锁屏，按脚本返回SKIP；不能称最后构建快捷键已人工验收。原生窗口探针在此之前通过。
+- 安装首轮空闲锁屏采样含专属WebKit主/GPU/Networking，physical footprint总计约119MB，主进程CPU瞬时0.0%；非操作峰值。应用磁盘约11MiB。
+
+### Esc行为本地修正
+
+新增3个浏览器场景通过（其余22个场景亦通过）：工具库打开工具后直接Esc回Dock/再Esc隐藏、稿纸保留、翻译页面事件返回、独立窗口Esc保存关闭/保存失败保留、输入法与repeat保护。原生窗口探针以Esc替代关闭按钮验证最后输入flush；真实Google网页探针验证独立消息回传以及输入法/repeat保护。Go race全量、Windows/Linux arm64+x64编译通过。
+
+已更新 `/Applications/QuickDock.app`，验签通过，真实定向键盘事件验证Esc隐藏Dock、重新唤起后Esc再次隐藏通过。最后重新唤起保留供用户查看。本轮未发布标签/Release。
+
+
+### Unslop UI与材质验证
+
+33前端逻辑、25浏览器全量通过；Go race和原生独立窗口保存/重启探针通过。首轮测试因Vite热更造成模块观测与页面重载干扰，停止编辑后完整重跑25全部通过，Esc测试拦截支持Vite查询参数。浅深/西语截图目视检查与导航溢出检测通过。Wails默认Translucent出现空白已由原生截图确证，改Transparent WebView+runtime ready后AppKit Sidebar视觉材质，原生隔离Dock显示正常。安装文件主程序与构建SHA256一致、ad-hoc验签通过。细节见unslop/README.md。
+
+最终安装版按用户当前Cmd+Space进行双屏原生回归通过：首次CGWindow可见34.6/50.3ms、同快捷键隐藏、第二实例退出并唤起原实例；非完整UI绘制延迟。测试保留用户当前快捷键设置。
+
+### 透明背景与唤起分隔线修正
+
+用户反馈透明度不可见后追查源码：Wails3.1默认public-API构建的WKWebView透明操作是no-op，因此此前材质截图只能证明内容显示，不能证明背景穿透。现于主窗口runtime-ready后递归定位WKWebView，受异常保护关闭drawsBackground，并清除underPageBackgroundColor；采用HUDWindow系统模糊材质。CSS底色遮罩改为浅Dock38%/深32%、浅侧栏42%/深36%，编辑区实底。
+
+真实AppKit+WKWebView合成验证：同一前窗在红/蓝后窗之前，屏幕区域采样RGB分别(.565,.243,.181)与(.171,.268,.564)，确认背景色实际透入。仅screencapture -l的独立窗口截图不含behind-window实际合成，应以屏幕区域采样验证；只采固定测试色，不将其他桌面内容写入仓库。
+
+搜索自动聚焦引出的2px蓝色横线已删除，保留1px中性边框；键盘控件焦点环保留。8项Esc/稿纸/历史回归与Go race通过，最终本机安装/验签/主程序哈希一致；未发布。

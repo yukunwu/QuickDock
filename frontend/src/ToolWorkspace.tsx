@@ -1,3 +1,4 @@
+import { errorText, localizedStats, t, useLocale } from "./i18n";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Copy, ShieldCheck } from "lucide-react";
 import { tools, type ToolID, type Settings } from "./catalog";
@@ -39,6 +40,7 @@ export default function ToolWorkspace(props: {
   notify: (s: string) => void;
   back: () => void;
 }) {
+  useLocale();
   if (props.id === "translate")
     return <TranslationWorkspace back={props.back} notify={props.notify} />;
   if (props.id === "calculator")
@@ -58,6 +60,7 @@ function Workspace({
   notify: (s: string) => void;
   back: () => void;
 }) {
+  useLocale();
   const tool = tools.find((t) => t.id === id)!;
   const [state, setState] = useState(() => {
     const draft = drafts.get(id) || initial(id);
@@ -87,13 +90,13 @@ function Workspace({
     <label>
       {label}{" "}
       <select
-        aria-label={label}
+        aria-label={t(label)}
         value={String(state[key])}
         onChange={(e) => update({ [key]: e.target.value })}
       >
         {options.map(([value, label]) => (
           <option key={value} value={value}>
-            {label}
+            {t(label)}
           </option>
         ))}
       </select>
@@ -102,7 +105,7 @@ function Workspace({
   return (
     <section className="workspace">
       <div className="workspace-header">
-        <button className="icon-button" aria-label="返回" onClick={back}>
+        <button className="icon-button" aria-label={t("返回")} onClick={back}>
           <ArrowLeft size={19} />
         </button>
         <span className={`item-icon ${tool.color}`}>
@@ -120,12 +123,12 @@ function Workspace({
             onClick={() =>
               void bridge
                 .copy(result)
-                .then(() => notify("结果已复制"))
-                .catch((e) => notify(String(e)))
+                .then(() => notify(t("结果已复制")))
+                .catch((e) => notify(errorText(e)))
             }
           >
             <Copy size={14} />
-            复制结果
+            {t("复制结果")}
           </button>
         )}
       </div>
@@ -138,46 +141,46 @@ function Workspace({
       ) : (
         <>
           <div className="workspace-options">
-            <span className="tag">本地处理</span>
+            <span className="tag">{t("本地处理")}</span>
             {id !== "uuid" && (
               <button
                 className="secondary"
                 onClick={() => update({ input: "" })}
               >
-                清空输入
+                {t("清空输入")}
               </button>
             )}
             {id === "calculator" && <span>+ − × ÷ ( ) · 15% = 0.15</span>}
             {id === "json" &&
-              select("格式", "mode", [
-                ["encode", "格式化 · 2 空格"],
-                ["compact", "压缩"],
+              select(t("格式"), "mode", [
+                ["encode", t("格式化 · 2 空格")],
+                ["compact", t("压缩")],
               ])}
             {(id === "base64" || id === "url") && (
               <>
-                {select("操作", "mode", [
-                  ["encode", "编码"],
-                  ["decode", "解码"],
+                {select(t("操作"), "mode", [
+                  ["encode", t("编码")],
+                  ["decode", t("解码")],
                 ])}
                 <span>
                   {id === "base64"
-                    ? "UTF-8 文本 · 标准 Base64"
-                    : "URL 组件语义（+ 不转为空格）"}
+                    ? t("UTF-8 文本 · 标准 Base64")
+                    : t("URL 组件语义（+ 不转为空格）")}
                 </span>
               </>
             )}
             {id === "timestamp" && (
               <>
-                {select("方向", "mode", [
-                  ["encode", "时间戳 → 日期"],
-                  ["date", "日期 → 时间戳"],
+                {select(t("方向"), "mode", [
+                  ["encode", t("时间戳 → 日期")],
+                  ["date", t("日期 → 时间戳")],
                 ])}
-                {select("单位", "unit", [
-                  ["s", "秒 s"],
-                  ["ms", "毫秒 ms"],
+                {select(t("单位"), "unit", [
+                  ["s", t("秒 s")],
+                  ["ms", t("毫秒 ms")],
                 ])}
-                {select("时区", "zone", [
-                  ["local", "本地时区"],
+                {select(t("时区"), "zone", [
+                  ["local", t("本地时区")],
                   ["utc", "UTC"],
                 ])}
                 <button
@@ -193,31 +196,31 @@ function Workspace({
                     })
                   }
                 >
-                  当前时间
+                  {t("当前时间")}
                 </button>
               </>
             )}
             {id === "hash" &&
               select(
-                "算法",
+                t("算法"),
                 "mode",
                 ["MD5", "SHA1", "SHA256", "SHA512"].map((a) => [a, a]),
               )}
             {id === "text" &&
-              select("处理", "mode", [
-                ["trim", "逐行去空格"],
-                ["upper", "转大写"],
-                ["lower", "转小写"],
-                ["empty", "删除空行"],
-                ["unique", "逐行去重"],
-                ["sort", "自然排序"],
+              select(t("处理"), "mode", [
+                ["trim", t("逐行去空格")],
+                ["upper", t("转大写")],
+                ["lower", t("转小写")],
+                ["empty", t("删除空行")],
+                ["unique", t("逐行去重")],
+                ["sort", t("自然排序")],
               ])}
             {id === "units" && (
               <>
                 <label>
-                  类别{" "}
+                  {t("类别")}{" "}
                   <select
-                    aria-label="类别"
+                    aria-label={t("类别")}
                     value={state.group}
                     onChange={(e) => {
                       const keys = Object.keys(engine.units[e.target.value]);
@@ -229,17 +232,19 @@ function Workspace({
                     }}
                   >
                     {Object.keys(engine.units).map((g) => (
-                      <option key={g}>{g}</option>
+                      <option key={g} value={g}>
+                        {t(g)}
+                      </option>
                     ))}
                   </select>
                 </label>
                 {select(
-                  "从",
+                  t("从"),
                   "from",
                   Object.keys(engine.units[state.group]).map((u) => [u, u]),
                 )}
                 {select(
-                  "到",
+                  t("到"),
                   "to",
                   Object.keys(engine.units[state.group]).map((u) => [u, u]),
                 )}
@@ -248,9 +253,9 @@ function Workspace({
             {id === "uuid" && (
               <>
                 <label>
-                  数量{" "}
+                  {t("数量")}{" "}
                   <input
-                    aria-label="UUID 数量"
+                    aria-label={t("UUID 数量")}
                     type="number"
                     min="1"
                     max="1000"
@@ -264,11 +269,11 @@ function Workspace({
                     try {
                       update({ generated: engine.uuids(state.count) });
                     } catch (e) {
-                      notify(String(e));
+                      notify(errorText(e));
                     }
                   }}
                 >
-                  生成 UUID v4
+                  {t("生成 UUID v4")}
                 </button>
               </>
             )}
@@ -279,22 +284,22 @@ function Workspace({
             {id !== "uuid" && (
               <div className="editor-pane">
                 <div className="editor-label">
-                  输入
+                  {t("输入")}
                   <span>
                     {id === "timestamp" && state.mode === "date"
                       ? "YYYY-MM-DD HH:mm:ss"
                       : id === "text"
-                        ? inputStats
-                        : "即时转换"}
+                        ? localizedStats(inputStats)
+                        : t("即时转换")}
                   </span>
                 </div>
                 <textarea
-                  aria-label="工具输入"
+                  aria-label={t("工具输入")}
                   spellCheck={false}
                   placeholder={
                     id === "timestamp" && state.mode === "date"
                       ? "2026-11-04 12:00:00"
-                      : "在这里输入…"
+                      : t("在这里输入…")
                   }
                   value={state.input}
                   onChange={(e) => update({ input: e.target.value })}
@@ -303,25 +308,25 @@ function Workspace({
             )}
             <div className="editor-pane output">
               <div className="editor-label">
-                结果
+                {t("结果")}
                 <span className={error ? "output-error" : "success"}>
                   {pending
-                    ? "处理中…"
+                    ? t("处理中…")
                     : error
-                      ? "请检查输入"
+                      ? t("请检查输入")
                       : result.length > PREVIEW_LIMIT
-                        ? "预览前 65,536 字符 · 复制获取全文"
+                        ? t("预览前 65,536 字符 · 复制获取全文")
                         : result
-                          ? "就绪"
-                          : "等待输入"}
+                          ? t("就绪")
+                          : t("等待输入")}
                 </span>
               </div>
               <pre
-                aria-label="工具结果"
+                aria-label={t("工具结果")}
                 role={error ? "alert" : undefined}
                 className={error ? "output-error" : ""}
               >
-                {error || result.slice(0, PREVIEW_LIMIT)}
+                {error ? errorText(error) : result.slice(0, PREVIEW_LIMIT)}
               </pre>
             </div>
           </div>
@@ -330,10 +335,10 @@ function Workspace({
       <div className="workspace-note">
         <ShieldCheck size={14} />
         {id === "text"
-          ? resultStats
+          ? localizedStats(resultStats)
           : new URLSearchParams(location.search).has("tool")
-            ? "数据在本机处理，独立窗口自动保存输入和选项。"
-            : "数据只在本机处理，工具输入仅在本次会话保留。"}
+            ? t("数据在本机处理，独立窗口自动保存输入和选项。")
+            : t("数据只在本机处理，工具输入仅在本次会话保留。")}
       </div>
     </section>
   );

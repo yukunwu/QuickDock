@@ -78,7 +78,7 @@ func (s *Service) OpenToolWindow(id, session string) error {
 		s.toolMu.Unlock()
 		return err
 	}
-	options := application.WebviewWindowOptions{Title: core.ToolTitles[id] + " · QuickDock", Name: "tool-" + id, URL: "/?tool=" + id, Width: state.Width, Height: state.Height, MinWidth: 760, MinHeight: 520, InitialPosition: application.WindowCentered}
+	options := application.WebviewWindowOptions{Title: s.toolTitle(id) + " · QuickDock", Name: "tool-" + id, URL: "/?tool=" + id, Width: state.Width, Height: state.Height, MinWidth: 760, MinHeight: 520, InitialPosition: application.WindowCentered}
 	if id == "translate" {
 		options.KeyBindings = map[string]func(application.Window){"CmdOrCtrl+W": func(window application.Window) { window.Close() }}
 	}
@@ -86,7 +86,7 @@ func (s *Service) OpenToolWindow(id, session string) error {
 	t := &toolWindow{window: w}
 	s.toolWindows[id] = t
 	s.toolMu.Unlock()
-	// Use standard macOS windows: no Dock blur/shortcut hooks or hide-on-Escape.
+	// Independent windows retain focus behavior; Escape uses the same save/close flow.
 	w.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		s.toolMu.Lock()
 		closing := t.closing

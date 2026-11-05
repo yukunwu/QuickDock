@@ -52,5 +52,9 @@ func (s *Service) GoogleTranslationPage(windowID, text, source, target, action s
 		return errors.New("未知翻译页面操作")
 	}
 	options, _ := json.Marshal(map[string]any{"text": text, "source": source, "target": target, "submit": action == "submit", "reload": action == "reload", "rect": rect, "browser": action == "browser"})
-	return application.InvokeSyncWithError(func() error { return platform.AttachGooglePage(w.NativeWindow(), path, string(options)) })
+	return application.InvokeSyncWithError(func() error {
+		return platform.AttachGooglePage(w.NativeWindow(), path, string(options), func() {
+			w.ExecJS(`window.dispatchEvent(new Event("quickdock-escape"))`)
+		})
+	})
 }

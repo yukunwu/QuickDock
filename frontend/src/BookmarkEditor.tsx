@@ -1,3 +1,4 @@
+import { errorText, t, useLocale } from "./i18n";
 import { getBookmarkDraft, setBookmarkDraft } from "./toolSession";
 import { useState } from "react";
 import { Pencil, Trash2, Globe } from "lucide-react";
@@ -14,6 +15,7 @@ export default function BookmarkEditor({
   saveSettings: (s: Settings) => Promise<void>;
   notify: (s: string) => void;
 }) {
+  useLocale();
   const [form, setForm] = useState(
     () => (getBookmarkDraft() as Bookmark | undefined) || draft,
   );
@@ -29,7 +31,7 @@ export default function BookmarkEditor({
       await saveSettings({ ...settings, bookmarks });
       return true;
     } catch (e) {
-      notify(String(e));
+      notify(errorText(e));
       return false;
     } finally {
       setBusy(false);
@@ -44,10 +46,10 @@ export default function BookmarkEditor({
           try {
             const url = new URL(form.url);
             if (url.username || url.password)
-              throw new Error("网址不能包含登录凭据");
+              throw new Error(t("网址不能包含登录凭据"));
             if (!["https:", "http:"].includes(url.protocol))
-              throw new Error("网址只支持 http:// 或 https://");
-            if (!form.name.trim()) throw new Error("请输入网址名称");
+              throw new Error(t("网址只支持 http:// 或 https://"));
+            if (!form.name.trim()) throw new Error(t("请输入网址名称"));
             const item = {
               ...form,
               id: form.id || crypto.randomUUID(),
@@ -63,32 +65,32 @@ export default function BookmarkEditor({
             )
               update({ ...blank });
           } catch (e) {
-            notify(String(e));
+            notify(errorText(e));
           }
         }}
       >
         <input
-          aria-label="网址名称"
-          placeholder="名称"
+          aria-label={t("网址名称")}
+          placeholder={t("名称")}
           value={form.name}
           onChange={(e) => update({ ...form, name: e.target.value })}
           required
         />
         <input
-          aria-label="网址地址"
+          aria-label={t("网址地址")}
           placeholder="https://example.com"
           value={form.url}
           onChange={(e) => update({ ...form, url: e.target.value })}
           required
         />
         <input
-          aria-label="网址别名"
-          placeholder="搜索别名"
+          aria-label={t("网址别名")}
+          placeholder={t("搜索别名")}
           value={form.alias}
           onChange={(e) => update({ ...form, alias: e.target.value })}
         />
         <button className="primary" disabled={busy}>
-          {form.id ? "保存" : "添加"}
+          {form.id ? t("保存") : t("添加")}
         </button>
         {form.id && (
           <button
@@ -96,7 +98,7 @@ export default function BookmarkEditor({
             className="secondary"
             onClick={() => update({ ...blank })}
           >
-            取消编辑
+            {t("取消编辑")}
           </button>
         )}
       </form>
@@ -114,14 +116,16 @@ export default function BookmarkEditor({
             <button
               className="secondary"
               onClick={() =>
-                void bridge.openBookmark(b.id).catch((e) => notify(String(e)))
+                void bridge
+                  .openBookmark(b.id)
+                  .catch((e) => notify(errorText(e)))
               }
             >
-              打开
+              {t("打开")}
             </button>
             <button
               className="icon-button"
-              aria-label={`编辑${b.name}`}
+              aria-label={t("编辑{name}", { name: b.name })}
               onClick={() => update({ ...b })}
             >
               <Pencil size={15} />
@@ -129,7 +133,7 @@ export default function BookmarkEditor({
             <button
               className="icon-button"
               disabled={busy}
-              aria-label={`删除${b.name}`}
+              aria-label={t("删除{name}", { name: b.name })}
               onClick={() =>
                 void persist(settings.bookmarks.filter((x) => x.id !== b.id))
               }
@@ -140,7 +144,7 @@ export default function BookmarkEditor({
         ))}
         {!settings.bookmarks.length && (
           <div className="empty">
-            添加常用网址后，可通过名称、拼音或别名快速打开。
+            {t("添加常用网址后，可通过名称、拼音或别名快速打开。")}
           </div>
         )}
       </div>

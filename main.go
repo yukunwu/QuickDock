@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"quickdock/internal/i18n"
+	"quickdock/internal/platform"
 	"strings"
 	"sync"
 )
@@ -44,7 +46,7 @@ func main() {
 	service.app = app
 	service.initUpdates()
 	service.shortcuts = app.GlobalShortcut
-	service.window = app.Window.NewWithOptions(application.WebviewWindowOptions{Title: "QuickDock", Name: "quickdock", Width: 780, Height: 340, MinWidth: 700, MinHeight: 300, URL: "/", Frameless: true, InitialPosition: application.WindowCentered, Mac: application.MacWindow{CollectionBehavior: application.MacWindowCollectionBehaviorCanJoinAllSpaces | application.MacWindowCollectionBehaviorFullScreenAuxiliary}})
+	service.window = app.Window.NewWithOptions(application.WebviewWindowOptions{Title: "QuickDock", Name: "quickdock", Width: 780, Height: 340, MinWidth: 700, MinHeight: 300, URL: "/", Frameless: true, InitialPosition: application.WindowCentered, Mac: application.MacWindow{Backdrop: application.MacBackdropTransparent, CollectionBehavior: application.MacWindowCollectionBehaviorCanJoinAllSpaces | application.MacWindowCollectionBehaviorFullScreenAuxiliary}})
 	service.window.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) { service.Hide(); e.Cancel() })
 	service.window.OnWindowEvent(events.Common.WindowLostFocus, func(_ *application.WindowEvent) {
 		service.mu.Lock()
@@ -59,26 +61,34 @@ func main() {
 	service.window.OnWindowEvent(events.Common.WindowRuntimeReady, func(_ *application.WindowEvent) {
 		log.Print("window runtime ready")
 		// Internal idle reclamation reloads the page without revealing the window.
-		firstRuntime.Do(service.show)
+		firstRuntime.Do(func() {
+			application.InvokeSync(func() { platform.ConfigureMaterial(service.window.NativeWindow()) })
+			service.show()
+		})
 	})
 	tray := app.SystemTray.New()
-	tray.SetLabel("ϟ")
 	tray.SetIcon(trayIcon)
 	menu := app.NewMenu()
-	menu.Add("打开 QuickDock").OnClick(func(_ *application.Context) { service.show() })
-	menu.Add("打开翻译窗口").OnClick(func(_ *application.Context) {
+	service.localizedMenu = map[string]*application.MenuItem{}
+	addMenu := func(key string) *application.MenuItem {
+		item := menu.Add(i18n.T(service.locale(), key))
+		service.localizedMenu[key] = item
+		return item
+	}
+	addMenu("打开 QuickDock").OnClick(func(_ *application.Context) { service.show() })
+	addMenu("打开翻译窗口").OnClick(func(_ *application.Context) {
 		if err := service.OpenToolWindow("translate", ""); err != nil {
 			log.Print(err)
 		}
 	})
-	menu.Add("检查更新").OnClick(func(_ *application.Context) {
+	addMenu("检查更新").OnClick(func(_ *application.Context) {
 		service.show()
 		service.window.ExecJS(`window.dispatchEvent(new Event("quickdock-open-settings"))`)
 		go service.CheckForUpdates()
 	})
-	menu.Add("刷新应用索引").OnClick(func(_ *application.Context) { service.RefreshApps() })
+	addMenu("刷新应用索引").OnClick(func(_ *application.Context) { service.RefreshApps() })
 	menu.AddSeparator()
-	menu.Add("退出 QuickDock").OnClick(func(_ *application.Context) { app.Quit() })
+	addMenu("退出 QuickDock").OnClick(func(_ *application.Context) { app.Quit() })
 	tray.SetMenu(menu)
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
 		go func() {

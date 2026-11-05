@@ -74,7 +74,8 @@ func SystemProxy(target string) (string, error) {
 	return value, nil
 }
 
-func AttachGooglePage(window unsafe.Pointer, path, options string) error {
+func AttachGooglePage(window unsafe.Pointer, path, options string, onEscape func()) error {
+	setGoogleEscape(window, onEscape)
 	p := C.CString(path)
 	o := C.CString(options)
 	defer C.free(unsafe.Pointer(p))
@@ -82,5 +83,8 @@ func AttachGooglePage(window unsafe.Pointer, path, options string) error {
 	C.qd_google_attach(window, p, o)
 	return nil
 }
-func DetachGooglePage(window unsafe.Pointer) { C.qd_google_detach(window) }
-func FlushGooglePage(window unsafe.Pointer)  { C.qd_google_flush(window) }
+func DetachGooglePage(window unsafe.Pointer) {
+	C.qd_google_detach(window)
+	setGoogleEscape(window, nil)
+}
+func FlushGooglePage(window unsafe.Pointer) { C.qd_google_flush(window) }

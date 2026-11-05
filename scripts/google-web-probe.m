@@ -1,5 +1,7 @@
 // Actual native Google page integration; no Wails bridge in the remote view.
 #import "../internal/platform/google_web_darwin.m"
+static int escapeCount=0;
+void qdGoogleEscape(void *window) {escapeCount++;}
 int main(int argc,const char**argv){
  @autoreleasepool {
  NSApplication *app=[NSApplication sharedApplication];[app setActivationPolicy:NSApplicationActivationPolicyProhibited];
@@ -15,7 +17,9 @@ int main(int argc,const char**argv){
    NSDictionary *result=[value isKindOfClass:[NSString class]]?[NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding]options:0 error:nil]:nil;
    if([result[@"translated"]boolValue] && [result[@"input"]boolValue] && [result[@"bridge"]isEqualToString:@"undefined"]){
     [timer invalidate];puts("PASS native Google page 我爱你 -> I love you, editable input, no Wails bridge");
-    [page.view evaluateJavaScript:@"window.webkit.messageHandlers.quickdockGoogleDraft.postMessage({text:'native-web-draft',source:'zh-CN',target:'en'})" completionHandler:^(id value,NSError *error){
+    [page.view evaluateJavaScript:@"document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',isComposing:true}));document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',repeat:true}));document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));window.webkit.messageHandlers.quickdockGoogleDraft.postMessage({text:'native-web-draft',source:'zh-CN',target:'en'})" completionHandler:^(id value,NSError *error){
+     if(escapeCount!=1){puts("FAIL Google Escape / composition / repeat guard");exit(1);}
+     puts("PASS focused Google page Escape, composition and repeat guard");
      qd_google_flush(window);
      NSData *saved=[NSData dataWithContentsOfFile:[NSString stringWithUTF8String:argv[1]]];
      NSDictionary *state=saved?[NSJSONSerialization JSONObjectWithData:saved options:0 error:nil]:nil;

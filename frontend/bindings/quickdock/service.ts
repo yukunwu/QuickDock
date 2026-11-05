@@ -112,6 +112,14 @@ export function Snapshot(): $CancellablePromise<$models.Snapshot> {
     return $Call.ByID(2879094621);
 }
 
+/**
+ * The WebView supplies its OS-resolved locale when following system settings.
+ * It cannot change a saved explicit language through this presentation method.
+ */
+export function SyncUILanguage(language: string): $CancellablePromise<void> {
+    return $Call.ByID(2809623574, language);
+}
+
 export function ToolQuitReady(id: string): $CancellablePromise<void> {
     return $Call.ByID(2581957415, id);
 }

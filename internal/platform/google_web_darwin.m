@@ -2,9 +2,11 @@
 #import <WebKit/WebKit.h>
 #import <objc/runtime.h>
 #include <sys/stat.h>
+extern void qdGoogleEscape(void *window);
 
 @interface QDGooglePage : NSObject<WKNavigationDelegate,WKUIDelegate,WKScriptMessageHandler>
 @property(retain) WKWebView *view;
+@property(assign) NSWindow *window;
 @property(copy) NSString *path;
 @property(retain) NSDictionary *state;
 @property(retain) NSTextField *message;
@@ -19,6 +21,7 @@
 - (void)userContentController:(WKUserContentController*)controller didReceiveScriptMessage:(WKScriptMessage*)message {
  if(![message.frameInfo.securityOrigin.host isEqualToString:@"translate.google.com"] || ![message.body isKindOfClass:[NSDictionary class]])return;
  NSDictionary *body=message.body;
+ if([body[@"action"] isEqual:@"escape"]){qdGoogleEscape(self.window);return;}
  NSString *text=body[@"text"],*source=body[@"source"],*target=body[@"target"];
  if(![text isKindOfClass:[NSString class]]||text.length>10000||![source isKindOfClass:[NSString class]]||![target isKindOfClass:[NSString class]])return;
  self.state=@{@"text":text,@"source":source,@"target":target};
@@ -75,14 +78,14 @@ void qd_google_attach(void *raw,const char *path,const char *json){
   else if([requested[@"submit"]boolValue]){page.state=requested;[page save];[page.view loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:qdGoogleURL(requested)]]];}
   return;
  }
- page=[[[QDGooglePage alloc]init]autorelease];page.path=[NSString stringWithUTF8String:path];
+ page=[[[QDGooglePage alloc]init]autorelease];page.window=window;page.path=[NSString stringWithUTF8String:path];
  NSData *saved=[NSData dataWithContentsOfFile:page.path];
  NSDictionary *state=saved?[NSJSONSerialization JSONObjectWithData:saved options:0 error:nil]:nil;
  if(![state isKindOfClass:[NSDictionary class]]||![state[@"text"]isKindOfClass:[NSString class]]||![state[@"source"]isKindOfClass:[NSString class]]||![state[@"target"]isKindOfClass:[NSString class]])state=nil;
  page.state=[requested[@"submit"]boolValue]?requested:(state?:requested);
  WKWebViewConfiguration *config=[[[WKWebViewConfiguration alloc]init]autorelease];
  // Dedicated controller: remote Google scripts never receive Wails bindings.
- NSString *script=@"(()=>{const send=()=>{const p=new URL(location.href).searchParams;const input=document.querySelector('textarea');window.webkit.messageHandlers.quickdockGoogleDraft.postMessage({text:input ? input.value : (p.get('text') || ''),source:p.get('sl')||'auto',target:p.get('tl')||'zh-CN'});};document.addEventListener('input',e=>{if(e.target instanceof HTMLTextAreaElement)send();},true);document.addEventListener('click',()=>setTimeout(send,300),true);window.addEventListener('popstate',send);})();";
+ NSString *script=@"(()=>{document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!e.isComposing&&e.keyCode!==229&&!e.repeat){e.preventDefault();e.stopImmediatePropagation();window.webkit.messageHandlers.quickdockGoogleDraft.postMessage({action:'escape'});}},true);const send=()=>{const p=new URL(location.href).searchParams;const input=document.querySelector('textarea');window.webkit.messageHandlers.quickdockGoogleDraft.postMessage({text:input ? input.value : (p.get('text') || ''),source:p.get('sl')||'auto',target:p.get('tl')||'zh-CN'});};document.addEventListener('input',e=>{if(e.target instanceof HTMLTextAreaElement)send();},true);document.addEventListener('click',()=>setTimeout(send,300),true);window.addEventListener('popstate',send);})();";
  [config.userContentController addUserScript:[[[WKUserScript alloc]initWithSource:script injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES]autorelease]];
  [config.userContentController addScriptMessageHandler:page name:@"quickdockGoogleDraft"];
  NSView *content=window.contentView;

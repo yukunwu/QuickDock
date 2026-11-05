@@ -2,27 +2,29 @@
 
 基于 **Wails 3.1.0 + React + TypeScript** 的跨平台本地快捷工具。默认是紧凑启动面板，设置进入完整页面，工具独占工作区。
 
+支持简体中文、日本語、English、繁體中文、Español，默认跟随系统；可在偏好设置切换，保留工具输入。
+
 ## 本地运行
 
-本次交付支持 macOS / Windows / Linux 的 arm64 与 x64，十份分发包位于 `bin/releases/`。Linux 同时提供 Debian 系 `.deb` 和 Fedora／Red Hat 系 `.rpm`。系统依赖、安装方式及实测范围见 [跨平台验证](docs/CROSS-PLATFORM-VALIDATION.md)。
+支持 macOS / Windows / Linux 的 arm64 与 x64，安装包由 GitHub Actions 自动编译并发布到 [Releases](https://github.com/yukunwu/QuickDock/releases)。本地打包输出位于 `bin/releases/`。Linux 同时提供 Debian 系 `.deb` 和 Fedora／Red Hat 系 `.rpm`。系统依赖、安装方式及实测范围见 [跨平台验证](docs/CROSS-PLATFORM-VALIDATION.md)。
 
-本机 macOS 应用为 `bin/QuickDock.app`，最低 macOS 13。双击打开，或：
+macOS 将 `QuickDock.app` 拖入“应用程序”后打开，最低 macOS 13。本机安装路径为 `/Applications/QuickDock.app`：
 
 ```sh
-open bin/QuickDock.app
+open /Applications/QuickDock.app
 ```
 
-- macOS `Option+Space`；Windows／Linux `Ctrl+Alt+Space`：显示／隐藏；设置可更换。
+- macOS `Option+Space`；Windows／Linux `Ctrl+Alt+Space`：显示／隐藏；设置中选择修饰键，Space 固定。
 - Wayland 若无全局快捷键 Portal，在系统键盘设置中把快捷键命令设为 `quickdock --toggle`；重复执行切换原窗口。
 - macOS／Windows／Linux X11 唤起跟随鼠标所在屏幕；Wayland 由桌面系统安排窗口位置。
 - 空搜索展示最近使用的应用／工具，方向键选择，Enter 执行；支持中文、拼音、首字母和网址别名。
 - 输入无应用匹配时，提供 Google 搜索与翻译快捷项；搜索使用默认浏览器，翻译保留在当前 Dock。设置可分别关闭这两个入口。
 - 顶部设置按钮或 `⌘ ,` 进入设置；底部“全部工具”进入工具库。
-- 工具页占满窗口，不展示应用侧边栏和导航。Esc 返回，`⌘ W` 隐藏，输入在本次会话中保留。
-- 启动器失焦隐藏；工具和设置失焦保留。菜单栏 `ϟ` 可打开、刷新索引或退出。
+- 工具页占满窗口，不展示应用侧边栏和导航。Esc 回紧凑 Dock，Dock 再按 Esc 隐藏；独立工具 Esc 保存后关闭。`⌘ W` 隐藏，输入在本次会话中保留。
+- 启动器失焦隐藏；工具和设置失焦保留。菜单栏闪电图标 可打开、刷新索引或退出。
 - 重复启动只唤起原实例。
 
-`.app` 使用本机 ad-hoc 签名并已做签名完整性校验；不含 Developer ID 签名、公证、自动更新或外部发布。无需前端开发服务器即可运行。
+macOS `.app` 使用 ad-hoc 签名，不含 Developer ID 签名或公证。内置自动更新检查与手动下载安装，发布包校验 SHA256；详情见 [自动更新](docs/UPDATES.md)。无需前端开发服务器即可运行。
 
 ![原生启动面板](docs/screenshots/07-native-launcher.png)
 

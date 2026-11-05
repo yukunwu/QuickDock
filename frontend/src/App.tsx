@@ -1,3 +1,11 @@
+import {
+  errorText,
+  t,
+  t as translate,
+  setLanguage,
+  getLanguage,
+  useLocale,
+} from "./i18n";
 import { commandLabel } from "./platform";
 import {
   Suspense,
@@ -13,7 +21,8 @@ import {
   Search,
   Settings2,
   LayoutGrid,
-  Command,
+  Zap,
+  ExternalLink,
   ChevronRight,
   X,
   ArrowLeft,
@@ -41,6 +50,7 @@ const empty: Snapshot = {
   shortcutError: "",
 };
 export default function App() {
+  useLocale();
   const [data, setData] = useState<Snapshot>(empty),
     [page, setPage] = useState<"launch" | "tools" | "settings">(
       restoredView?.page || "launch",
@@ -123,8 +133,12 @@ export default function App() {
     () =>
       bridge
         .snapshot()
-        .then(setData)
-        .catch((e) => notify(String(e))),
+        .then((value) => {
+          setLanguage(value.settings.language);
+          void bridge.syncUILanguage(getLanguage());
+          setData(value);
+        })
+        .catch((e) => notify(errorText(e))),
     [notify],
   );
   useEffect(() => {
@@ -156,7 +170,7 @@ export default function App() {
               : "launcher"
           : "workspace",
       )
-      .catch((e) => notify(String(e)));
+      .catch((e) => notify(errorText(e)));
   }, [compact, expanded, translationOpen, notify]);
   const navigate = (p: typeof page) => {
     setTranslationOpen(false);
@@ -170,15 +184,21 @@ export default function App() {
   const available = tools.filter(
     (t) => !data.settings.disabledTools.includes(t.id),
   );
-  const results = useMemo(() => searchEntries(query, data), [query, data]);
+  const locale = getLanguage();
+  const results = useMemo(
+    () => searchEntries(query, data),
+    [query, data, locale],
+  );
   const save = async (settings: Settings) => {
     setBusy(true);
     try {
       const saved = await bridge.saveSettings(settings);
+      setLanguage(saved.language);
+      void bridge.syncUILanguage(getLanguage());
       setData((d) => ({ ...d, settings: saved, shortcutError: "" }));
-      notify("设置已保存");
+      notify(t("设置已保存"));
     } catch (e) {
-      notify(String(e));
+      notify(errorText(e));
       throw e;
     } finally {
       setBusy(false);
@@ -200,22 +220,24 @@ export default function App() {
       else if (r.kind === "bookmark") await bridge.openBookmark(r.id);
       else {
         await bridge.copy(r.value || "");
-        notify("计算结果已复制");
+        notify(t("计算结果已复制"));
       }
       void load();
     } catch (e) {
-      notify(String(e));
+      notify(errorText(e));
     }
   };
   useEffect(() => {
+    const escape = () => {
+      if (translationOpen || activeTool || page !== "launch")
+        navigate("launch");
+      else void bridge.hide().catch((e) => notify(errorText(e)));
+    };
     const fn = (e: KeyboardEvent) => {
-      if (e.isComposing || e.keyCode === 229) return;
+      if (e.isComposing || e.keyCode === 229 || e.repeat) return;
       if (e.key === "Escape") {
         e.preventDefault();
-        if (translationOpen) setTranslationOpen(false);
-        else if (activeTool) setActiveTool(null);
-        else if (page !== "launch") navigate("launch");
-        else void bridge.hide();
+        escape();
       }
       if ((e.metaKey || e.ctrlKey) && e.key === ",") {
         e.preventDefault();
@@ -229,7 +251,12 @@ export default function App() {
     const openSettings = () => navigate("settings");
     window.addEventListener("quickdock-open-settings", openSettings);
     window.addEventListener("keydown", fn);
-    return () => { window.removeEventListener("keydown", fn); window.removeEventListener("quickdock-open-settings", openSettings); };
+    window.addEventListener("quickdock-escape", escape);
+    return () => {
+      window.removeEventListener("keydown", fn);
+      window.removeEventListener("quickdock-escape", escape);
+      window.removeEventListener("quickdock-open-settings", openSettings);
+    };
   }, [activeTool, page, translationOpen]);
   const cards = available.filter(
     (t) =>
@@ -265,42 +292,40 @@ export default function App() {
               <aside className="sidebar">
                 <div className="brand">
                   <span className="brand-mark">
-                    <Command size={21} />
+                    <Zap size={21} />
                   </span>
-                  <span>
-                    QuickDock<span className="brand-caption">随唤 · 随用</span>
-                  </span>
+                  <span>QuickDock</span>
                 </div>
-                <div className="nav-caption">工作空间</div>
+
                 <nav>
                   <button
                     className="nav-item"
                     onClick={() => navigate("launch")}
                   >
                     <Search size={17} />
-                    快捷启动
+                    {t("快捷启动")}
                   </button>
                   <button
                     className={`nav-item ${page === "tools" || activeTool ? "active" : ""}`}
                     onClick={() => navigate("tools")}
                   >
                     <LayoutGrid size={17} />
-                    工具库<span className="count">{available.length}</span>
+                    {t("工具库")}
+                    <span className="count">{available.length}</span>
                   </button>
                   <button
                     className={`nav-item ${page === "settings" && !activeTool ? "active" : ""}`}
                     onClick={() => navigate("settings")}
                   >
                     <Settings2 size={17} />
-                    偏好设置
+                    {t("偏好设置")}
                   </button>
                 </nav>
                 <div className="sidebar-bottom">
                   <div className="local-status">
                     <span />
-                    {bridge.native ? "本地运行" : "浏览器预览 · 示例应用"}
+                    {bridge.native ? t("本地运行") : t("浏览器预览 · 示例应用")}
                   </div>
-                  <div className="sidebar-version">QuickDock 0.1.0</div>
                 </div>
               </aside>
             )}
@@ -309,7 +334,7 @@ export default function App() {
                 <header className="topbar">
                   <button
                     className="icon-button"
-                    aria-label="返回快捷启动"
+                    aria-label={t("返回快捷启动")}
                     onClick={() => navigate("launch")}
                   >
                     <ArrowLeft size={17} />
@@ -321,8 +346,8 @@ export default function App() {
                       {activeTool
                         ? tools.find((t) => t.id === activeTool)?.name
                         : page === "settings"
-                          ? "偏好设置"
-                          : "工具库"}
+                          ? t("偏好设置")
+                          : t("工具库")}
                     </strong>
                   </div>
                   <span className="shortcut-pill">
@@ -334,13 +359,13 @@ export default function App() {
               )}
               {!activeTool && data.shortcutError && (
                 <div className="inline-warning" role="alert">
-                  {data.shortcutError} · 请在设置中更换快捷键
+                  {errorText(data.shortcutError)} {t("· 请在设置中更换快捷键")}
                 </div>
               )}
               {activeTool ? (
                 visible ? (
                   <Suspense
-                    fallback={<div className="empty">正在打开工具…</div>}
+                    fallback={<div className="empty">{t("正在打开工具…")}</div>}
                   >
                     <ToolWorkspace
                       id={activeTool}
@@ -352,7 +377,9 @@ export default function App() {
                   </Suspense>
                 ) : null
               ) : page === "settings" ? (
-                <Suspense fallback={<div className="empty">正在加载设置…</div>}>
+                <Suspense
+                  fallback={<div className="empty">{t("正在加载设置…")}</div>}
+                >
                   <SettingsPage
                     data={data}
                     busy={busy}
@@ -361,9 +388,9 @@ export default function App() {
                     refresh={async () => {
                       try {
                         setData(await bridge.refreshApps());
-                        notify("应用索引正在刷新");
+                        notify(t("应用索引正在刷新"));
                       } catch (e) {
-                        notify(String(e));
+                        notify(errorText(e));
                       }
                     }}
                   />
@@ -372,22 +399,22 @@ export default function App() {
                 <>
                   <section className="page-heading">
                     <div>
-                      <h1>工具库</h1>
-                      <p>顺手的内置工具，专注手头的事。</p>
+                      <h1>{t("工具库")}</h1>
+                      <p>{t("文本、计算与常用网址")}</p>
                     </div>
                   </section>
                   <div className="search-wrap">
                     <Search size={18} />
                     <input
-                      aria-label="搜索工具"
+                      aria-label={t("搜索工具")}
                       value={query}
-                      placeholder="查找工具…"
+                      placeholder={t("查找工具…")}
                       onChange={(e) => setQuery(e.target.value)}
                     />
                     {query && (
                       <button
                         className="icon-button"
-                        aria-label="清空搜索"
+                        aria-label={t("清空搜索")}
                         onClick={() => setQuery("")}
                       >
                         <X size={15} />
@@ -399,15 +426,17 @@ export default function App() {
                       <div className="segmented">
                         {["全部", "开发", "日常"].map((c) => (
                           <button
-                            key={c}
+                            key={t(c)}
                             className={category === c ? "active" : ""}
                             onClick={() => setCategory(c)}
                           >
-                            {c}
+                            {t(c)}
                           </button>
                         ))}
                       </div>
-                      <span>{cards.length} 个工具</span>
+                      <span>
+                        {cards.length} {t("个工具")}
+                      </span>
                     </div>
                     <div className="tool-grid">
                       {cards.map((t) => (
@@ -435,21 +464,24 @@ export default function App() {
                           </button>
                           <button
                             className="tool-detach"
-                            aria-label={`独立打开 ${t.name}`}
+                            aria-label={translate("独立打开 {tool}", {
+                              tool: t.name,
+                            })}
                             onClick={() =>
                               void bridge
                                 .openToolWindow(t.id)
-                                .catch((e) => notify(String(e)))
+                                .catch((e) => notify(errorText(e)))
                             }
                           >
-                            独立打开 ↗
+                            <ExternalLink size={16} />
+                            <span>{translate("独立打开")}</span>
                           </button>
                         </div>
                       ))}
                     </div>
                     {!cards.length && (
                       <div className="empty">
-                        没有匹配的工具，可在设置中启用工具。
+                        {t("没有匹配的工具，可在设置中启用工具。")}
                       </div>
                     )}
                   </div>
@@ -458,9 +490,12 @@ export default function App() {
               {!activeTool && (
                 <footer>
                   <span>
-                    <kbd>esc</kbd>返回<kbd>{commandLabel} W</kbd>隐藏窗口
+                    <kbd>esc</kbd>
+                    {t("返回")}
+                    <kbd>{commandLabel} W</kbd>
+                    {t("隐藏窗口")}
                   </span>
-                  <span>内置工具 · 按需使用</span>
+                  <span>{t("内置工具 · 按需使用")}</span>
                 </footer>
               )}
             </main>
@@ -471,7 +506,7 @@ export default function App() {
             {toast}
             <button
               className="icon-button"
-              aria-label="关闭提示"
+              aria-label={t("关闭提示")}
               onClick={() => setToast("")}
             >
               <X size={14} />
@@ -481,7 +516,7 @@ export default function App() {
       </div>
       {!bridge.native && (
         <div className="desktop-caption">
-          QUICKDOCK <span>随唤 · 随用</span>
+          QUICKDOCK <span>{t("随唤 · 随用")}</span>
         </div>
       )}
     </div>

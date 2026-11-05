@@ -135,3 +135,26 @@ func TestDesktopEntriesRespectLocaleAndUserOverrides(t *testing.T) {
 		}
 	}
 }
+
+func TestSettingsLanguagesAreBackwardCompatible(t *testing.T) {
+	for _, language := range []string{"", "system", "zh-CN", "ja", "en", "zh-TW", "es"} {
+		state := Defaults()
+		state.Settings.Language = language
+		path := filepath.Join(t.TempDir(), "settings.json")
+		if err := Validate(state.Settings); err != nil {
+			t.Fatal(language, err)
+		}
+		if err := AtomicJSON(path, state); err != nil {
+			t.Fatal(err)
+		}
+		restored, _, err := Load(path)
+		if err != nil || restored.Settings.Language != language {
+			t.Fatal(language, restored, err)
+		}
+	}
+	state := Defaults()
+	state.Settings.Language = "fr"
+	if Validate(state.Settings) == nil {
+		t.Fatal("unsupported locale accepted")
+	}
+}

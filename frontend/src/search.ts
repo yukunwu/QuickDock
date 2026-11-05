@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { calculate } from "./tools/calculator";
 import { pinyin } from "pinyin-pro";
 import {
@@ -40,7 +41,7 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
     ...apps.map((a) => ({
       id: a.id,
       title: a.name,
-      subtitle: "应用程序",
+      subtitle: t("应用程序"),
       kind: "app" as const,
       icon: fallbackIcons[a.name] || genericAppIcon,
       color:
@@ -132,8 +133,8 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
       matched.push({
         id: "google",
         kind: "websearch",
-        title: `Google 搜索「${query}」`,
-        subtitle: "使用默认浏览器打开搜索结果",
+        title: t("Google 搜索「{query}」", { query }),
+        subtitle: t("使用默认浏览器打开搜索结果"),
         icon: Search,
         color: "blue",
         value: query,
@@ -142,8 +143,8 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
       matched.push({
         id: "translate",
         kind: "translation",
-        title: `翻译「${query}」`,
-        subtitle: "在当前 Dock 内查看译文",
+        title: t("翻译「{query}」", { query }),
+        subtitle: t("在当前 Dock 内查看译文"),
         icon: Languages,
         color: "purple",
         value: query,

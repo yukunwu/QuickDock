@@ -25,6 +25,7 @@ export interface Calculation {
 
 export interface Settings {
     "version": number;
+    "language"?: string;
     "theme": string;
     "shortcut": string;
     "disabledTools": string[] | null;

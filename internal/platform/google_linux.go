@@ -91,6 +91,7 @@ type linuxGoogle struct {
 	signal                            uint64
 	path                              string
 	state                             googleState
+	escape                            func()
 }
 
 var linuxGooglePages = map[uintptr]*linuxGoogle{}
@@ -123,14 +124,24 @@ var gtkGoogleCallback = purego.NewCallback(func(manager, result, data uintptr) {
 		return
 	}
 	defer gtkGoogle.free(raw)
+	text := cString(raw)
+	var action struct {
+		Action string `json:"action"`
+	}
+	if len(text) < 100*1024 && json.Unmarshal([]byte(text), &action) == nil && action.Action == "escape" {
+		if page.escape != nil {
+			page.escape()
+		}
+		return
+	}
 	var state googleState
-	if text := cString(raw); len(text) < 100*1024 && json.Unmarshal([]byte(text), &state) == nil && validGoogleState(state) {
+	if len(text) < 100*1024 && json.Unmarshal([]byte(text), &state) == nil && validGoogleState(state) {
 		page.state = state
 		_ = saveGoogleState(page.path, state)
 	}
 })
 
-func AttachGooglePage(window unsafe.Pointer, path, raw string) error {
+func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) error {
 	if err := loadGtkGoogle(); err != nil {
 		return errors.New("Google网页需要WebKitGTK 4.1：" + err.Error())
 	}
@@ -161,7 +172,7 @@ func AttachGooglePage(window unsafe.Pointer, path, raw string) error {
 		gtkGoogle.setPass(overlay, view, 0)
 		gtkGoogle.alignH(view, 1)
 		gtkGoogle.alignV(view, 1)
-		page = &linuxGoogle{view: view, overlay: overlay, container: container, manager: manager, path: path, state: loadGoogleState(path, options)}
+		page = &linuxGoogle{view: view, overlay: overlay, container: container, manager: manager, path: path, state: loadGoogleState(path, options), escape: onEscape}
 		linuxGooglePages[parent] = page
 		gtkGoogle.registerMessage(manager, "quickdockGoogleDraft")
 		page.signal = gtkGoogle.connect(manager, "script-message-received::quickdockGoogleDraft", gtkGoogleCallback, parent, 0, 0)

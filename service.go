@@ -27,6 +27,8 @@ type shortcutRegistry interface {
 	IsRegistered(string) bool
 }
 type Service struct {
+	localizedMenu   map[string]*application.MenuItem
+	uiLanguage      string
 	updates         updateState
 	shortcuts       shortcutRegistry
 	mu              sync.Mutex
@@ -122,6 +124,9 @@ func (s *Service) SaveSettings(next core.Settings) (core.Settings, error) {
 			s.shortcutError = "旧快捷键释放失败：" + err.Error()
 			s.mu.Unlock()
 		}
+	}
+	if s.app != nil {
+		s.SyncUILanguage(s.locale())
 	}
 	return next, nil
 }

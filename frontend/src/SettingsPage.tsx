@@ -1,4 +1,6 @@
-import { defaultShortcut } from "./platform";
+import { errorText, t, t as translate, useLocale } from "./i18n";
+import ShortcutPicker from "./ShortcutPicker";
+import { languages } from "./i18n";
 import { Suspense, lazy, useState, useEffect } from "react";
 import { Monitor, Sun, Moon, RefreshCw, Zap } from "lucide-react";
 import {
@@ -22,29 +24,56 @@ export default function SettingsPage({
   refresh: () => Promise<void>;
   notify: (s: string) => void;
 }) {
-  const [shortcut, setShortcut] = useState(data.settings.shortcut);
-  useEffect(
-    () => setShortcut(data.settings.shortcut),
-    [data.settings.shortcut],
-  );
+  useLocale();
   return (
     <div className="settings-page scroll">
-      <div className="eyebrow">MAKE IT YOURS</div>
-      <h1>偏好设置</h1>
-      <p className="muted">外观、快捷键与工具，按你的习惯设置。</p>
-      {data.error && <div className="inline-warning">{data.error}</div>}
+      <h1>{t("偏好设置")}</h1>
+      <p className="muted">{t("语言、外观与键盘操作")}</p>
+      {data.error && (
+        <div className="inline-warning">{errorText(data.error)}</div>
+      )}
       <section className="settings-section">
-        <h3>通用</h3>
+        <h3>{t("通用")}</h3>
         <div className="setting-row">
           <div>
-            <strong>外观</strong>
-            <p>选择你喜欢的工作氛围</p>
+            <strong>{t("界面语言")}</strong>
+          </div>
+          <select
+            aria-label={t("界面语言")}
+            value={data.settings.language || "system"}
+            disabled={busy}
+            onChange={(e) =>
+              void save({
+                ...data.settings,
+                language: e.target.value as Settings["language"],
+              }).catch(() => {})
+            }
+          >
+            <option value="system">{t("跟随系统")}</option>
+            {languages.map((l) => (
+              <option key={l} value={l}>
+                {
+                  {
+                    "zh-CN": "简体中文",
+                    "zh-TW": "繁體中文",
+                    en: "English",
+                    ja: "日本語",
+                    es: "Español",
+                  }[l]
+                }
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="setting-row">
+          <div>
+            <strong>{t("外观")}</strong>
           </div>
           <div className="segmented">
             {[
-              { id: "system" as const, icon: Monitor, label: "系统" },
-              { id: "light" as const, icon: Sun, label: "浅色" },
-              { id: "dark" as const, icon: Moon, label: "深色" },
+              { id: "system" as const, icon: Monitor, label: t("系统") },
+              { id: "light" as const, icon: Sun, label: t("浅色") },
+              { id: "dark" as const, icon: Moon, label: t("深色") },
             ].map((t) => (
               <button
                 disabled={busy}
@@ -62,36 +91,28 @@ export default function SettingsPage({
         </div>
         <div className="setting-row">
           <div>
-            <strong>全局唤起快捷键</strong>
-            <p>无论身在何处，即刻打开 QuickDock</p>
+            <strong>{t("全局唤起快捷键")}</strong>
+            <p>{t("再次按下相同快捷键可隐藏")}</p>
             {/Linux/.test(navigator.platform) && (
-              <p>Wayland 桌面若不支持全局快捷键，请在系统键盘设置中绑定 quickdock --toggle。</p>
+              <p>
+                {t(
+                  "Wayland 桌面若不支持全局快捷键，请在系统键盘设置中绑定 quickdock --toggle。",
+                )}
+              </p>
             )}
           </div>
-          <form
-            className="inline-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void save({ ...data.settings, shortcut }).catch(() => {});
-            }}
-          >
-            <input
-              aria-label="全局快捷键"
-              value={shortcut}
-              onChange={(e) => setShortcut(e.target.value)}
-              placeholder={defaultShortcut}
-            />
-            <button disabled={busy} className="secondary">
-              保存
-            </button>
-          </form>
+          <ShortcutPicker
+            value={data.settings.shortcut}
+            busy={busy}
+            save={(shortcut) => save({ ...data.settings, shortcut })}
+          />
         </div>
         <div className="setting-row">
           <div>
-            <strong>应用索引</strong>
+            <strong>{t("应用索引")}</strong>
             <p>
-              已发现 {data.apps.length} 个应用
-              {data.indexing ? " · 正在刷新…" : ""}
+              {t("已发现")} {data.apps.length} {t("个应用")}
+              {data.indexing ? " " + t("· 正在刷新…") : ""}
             </p>
           </div>
           <button
@@ -100,15 +121,16 @@ export default function SettingsPage({
             onClick={() => void refresh()}
           >
             <RefreshCw size={14} />
-            刷新索引
+            {t("刷新索引")}
           </button>
         </div>
       </section>
       <section className="settings-section">
         <h3>
-          工具与快捷入口 <span>{tools.length + launcherActions.length}</span>
+          {t("工具与快捷入口")}{" "}
+          <span>{tools.length + launcherActions.length}</span>
         </h3>
-        <p className="muted">关闭后隐藏对应工具或 Dock 联网快捷入口。</p>
+        <p className="muted">{t("关闭后隐藏对应工具或 Dock 联网快捷入口。")}</p>
         <div className="tool-switches">
           {[...tools, ...launcherActions].map((t) => (
             <div key={t.id} className="tool-switch">
@@ -118,7 +140,7 @@ export default function SettingsPage({
               <span>{t.name}</span>
               <button
                 role="switch"
-                aria-label={`启用${t.name}`}
+                aria-label={translate("启用{tool}", { tool: t.name })}
                 aria-checked={!data.settings.disabledTools.includes(t.id)}
                 disabled={busy}
                 className={`switch ${data.settings.disabledTools.includes(t.id) ? "" : "on"}`}
@@ -138,8 +160,8 @@ export default function SettingsPage({
         </div>
       </section>
       <section className="settings-section">
-        <h3>常用网址</h3>
-        <Suspense fallback={<p>正在加载…</p>}>
+        <h3>{t("常用网址")}</h3>
+        <Suspense fallback={<p>{t("正在加载…")}</p>}>
           <BookmarkEditor
             settings={data.settings}
             saveSettings={save}
@@ -147,16 +169,18 @@ export default function SettingsPage({
           />
         </Suspense>
       </section>
-      <Suspense fallback={<p>正在加载更新…</p>}><UpdatePanel /></Suspense>
+      <Suspense fallback={<p>{t("正在加载更新…")}</p>}>
+        <UpdatePanel />
+      </Suspense>
       <div className="settings-about">
         <span className="brand-mark">
           <Zap size={16} />
         </span>
         <div>
           <strong>QuickDock</strong>
-          <p>Wails 3 · 为专注而生</p>
+          <p>{t("应用启动与日常工具")}</p>
         </div>
-        <span>本地优先，轻装上阵。</span>
+        <span>{t("工具数据保存在本机")}</span>
       </div>
     </div>
   );

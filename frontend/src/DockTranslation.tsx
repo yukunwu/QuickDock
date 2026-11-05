@@ -1,3 +1,4 @@
+import { errorText, t, useLocale } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ExternalLink, RotateCw, Languages } from "lucide-react";
 import * as bridge from "./bridge";
@@ -18,6 +19,7 @@ export default function DockTranslation({
   onQueryChange?: (s: string) => void;
   autoRun?: boolean;
 }) {
+  useLocale();
   const detached =
     new URLSearchParams(location.search).get("tool") === "translate";
   const content = useRef<HTMLDivElement>(null);
@@ -43,7 +45,7 @@ export default function DockTranslation({
       );
       attached.current = true;
     } catch (e) {
-      setError(String(e).replace(/^(?:RuntimeError|Error):\s*/, ""));
+      setError(errorText(e).replace(/^(?:RuntimeError|Error):\s*/, ""));
     }
   };
   useEffect(() => {
@@ -75,27 +77,27 @@ export default function DockTranslation({
     const flush = () =>
       void bridge
         .googleTranslationPage(windowID, "", "auto", "zh-CN", "flush")
-        .catch((e) => notify(String(e)));
+        .catch((e) => notify(errorText(e)));
     window.addEventListener("quickdock-google-flush", flush);
     return () => window.removeEventListener("quickdock-google-flush", flush);
   }, []);
   return (
-    <div className="google-page-shell" aria-label="Google网页翻译">
+    <div className="google-page-shell" aria-label={t("Google网页翻译")}>
       <div className="google-page-toolbar">
         <button
           className="icon-button"
-          aria-label="返回搜索结果"
+          aria-label={t("返回搜索结果")}
           onClick={() => {
             void bridge
               .googleTranslationPage(windowID, "", "auto", "zh-CN", "detach")
               .then(back)
-              .catch((e) => notify(String(e)));
+              .catch((e) => notify(errorText(e)));
           }}
         >
           <ArrowLeft size={17} />
         </button>
         <Languages size={18} />
-        <strong>Google 翻译</strong>
+        <strong>{t("Google 翻译")}</strong>
         <ToolWindowButton id="translate" notify={notify} />
         {!onQueryChange && (
           <button
@@ -103,16 +105,16 @@ export default function DockTranslation({
             className="primary"
             onClick={() => void change("submit")}
           >
-            翻译输入
+            {t("翻译输入")}
           </button>
         )}
         <button
           className="secondary"
-          aria-label="重新加载翻译网页"
+          aria-label={t("重新加载翻译网页")}
           onClick={() => void change("reload")}
         >
           <RotateCw size={14} />
-          重新加载
+          {t("重新加载")}
         </button>
         <button
           className="secondary"
@@ -121,11 +123,11 @@ export default function DockTranslation({
               ? void change("browser")
               : void bridge
                   .openTranslationPage(query, "auto", target)
-                  .catch((e) => notify(String(e)))
+                  .catch((e) => notify(errorText(e)))
           }
         >
           <ExternalLink size={14} />
-          浏览器打开
+          {t("浏览器打开")}
         </button>
       </div>
       <div className="google-page-content" ref={content}>
@@ -135,19 +137,19 @@ export default function DockTranslation({
           </div>
         ) : !bridge.native ? (
           <div className="google-preview">
-            <p>桌面版在这里直接显示 Google 翻译网页</p>
-            <p>原生 WebView 支持页面输入、翻译及网站验证。</p>
+            <p>{t("桌面版在这里直接显示 Google 翻译网页")}</p>
+            <p>{t("原生 WebView 支持页面输入、翻译及网站验证。")}</p>
             <textarea
-              aria-label="翻译原文"
+              aria-label={t("翻译原文")}
               value={query}
               onChange={(e) => onQueryChange?.(e.target.value)}
-              placeholder="浏览器预览不嵌入第三方网页"
+              placeholder={t("浏览器预览不嵌入第三方网页")}
             />
           </div>
         ) : null}
       </div>
       <div className="google-page-note">
-        Google 翻译网页 · 网络与网站验证由 Google 处理
+        {t("Google 翻译网页 · 网络与网站验证由 Google 处理")}
       </div>
     </div>
   );

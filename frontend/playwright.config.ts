@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   use: {
+    locale: "zh-CN",
     baseURL: "http://127.0.0.1:3415",
     viewport: { width: 1200, height: 850 },
     launchOptions: {
