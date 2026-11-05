@@ -272,7 +272,7 @@ export async function googleTranslationPage(
 
 export type UpdateInfo = { current: string; version: string; state: string; error: string; notes: string; progress: number; linux: boolean };
 export async function updateStatus(): Promise<UpdateInfo> {
-  return native ? (await backend()).UpdateStatus() : {current:"0.1.1", version:"", state:"idle", error:"", notes:"", progress:0, linux:false};
+  return native ? (await backend()).UpdateStatus() : {current:"0.1.2", version:"", state:"idle", error:"", notes:"", progress:0, linux:false};
 }
 export async function checkForUpdates(): Promise<UpdateInfo> {
   if (!native) throw Error("请在桌面版中检查更新");

@@ -6,7 +6,7 @@ test("update settings show status and preview cannot perform installation", asyn
   await page.getByLabel("搜索应用和工具").waitFor();
   await page.keyboard.press("Meta+,");
   const panel = page.getByRole("region", { name: "应用更新" });
-  await expect(panel).toContainText("QuickDock 0.1.1");
+  await expect(panel).toContainText("QuickDock 0.1.2");
   await expect(panel.getByRole("button", { name: "下载并安装" })).toHaveCount(
     0,
   );
