@@ -4,7 +4,7 @@
 
 ## 本地运行
 
-本次交付支持 macOS / Windows / Linux 的 arm64 与 x64，八份分发包位于 `bin/releases/`。Linux 同时提供 Debian 系 `.deb` 和 Fedora／Red Hat 系 `.rpm`。系统依赖、安装方式及实测范围见 [跨平台验证](docs/CROSS-PLATFORM-VALIDATION.md)。
+本次交付支持 macOS / Windows / Linux 的 arm64 与 x64，十份分发包位于 `bin/releases/`。Linux 同时提供 Debian 系 `.deb` 和 Fedora／Red Hat 系 `.rpm`。系统依赖、安装方式及实测范围见 [跨平台验证](docs/CROSS-PLATFORM-VALIDATION.md)。
 
 本机 macOS 应用为 `bin/QuickDock.app`，最低 macOS 13。双击打开，或：
 
@@ -105,6 +105,8 @@ Dock翻译及计算历史的新增验收、截图和网络边界见 [新增功�
 
 ## GitHub 与自动更新
 
-仓库：[yukunwu/QuickDock](https://github.com/yukunwu/QuickDock)。下载见 [Releases](https://github.com/yukunwu/QuickDock/releases)。分支推送自动测试／编译；推送与 `VERSION` 一致的 `v*` 标签，全部测试通过后自动发布八份包与校验和。
+仓库：[yukunwu/QuickDock](https://github.com/yukunwu/QuickDock)。下载见 [Releases](https://github.com/yukunwu/QuickDock/releases)。分支推送自动测试／编译；推送与 `VERSION` 一致的 `v*` 标签，全部测试通过后自动发布十份包与校验和。
 
 设置页新增“应用更新”，启动后及每 6 小时自动检查稳定版；点击下载校验，再保存并重启。macOS／Windows 原生替换应用，Linux 通过系统包管理器及授权安装。完整流程与限制见 [自动更新说明](docs/UPDATES.md)。
+
+macOS 首次安装推荐下载 Release 中的 `.dmg`（Apple Silicon 选 arm64，Intel 选 x64），打开后将 `QuickDock.app` 拖到 Applications。安装完成推出磁盘映像，再从“应用程序”启动。ZIP 保留供便携分发和应用内自动更新；CI 同时生成两种架构的 DMG，总计十份分发包。

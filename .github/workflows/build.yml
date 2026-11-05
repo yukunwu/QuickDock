@@ -49,6 +49,7 @@ jobs:
         with:
           name: quickdock-all-platforms
           path: |
+            bin/releases/*.dmg
             bin/releases/*.zip
             bin/releases/*.deb
             bin/releases/*.rpm

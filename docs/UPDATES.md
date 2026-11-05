@@ -6,7 +6,7 @@ GitHub 仓库：https://github.com/yukunwu/QuickDock
 
 推送 online／main、提交 Pull Request 或手动运行 Actions 会执行三平台测试，构建 macOS／Windows／Linux 的 arm64 和 x64。Linux 同时打包 DEB／RPM。构建产物下载自 Actions 的 quickdock-all-platforms artifact。
 
-发布稳定版：更新 VERSION，然后提交并推送对应的 v 标签。例如 VERSION 为 0.1.1 时推送 v0.1.1。标签与 VERSION 不符会失败。只有 macOS 构建、Linux 两架构安装启动测试、Windows 两架构原生 Go 测试全部成功后，工作流才创建 GitHub Release，一次上传八份包和 SHA256SUMS.txt。失败的构建不会成为更新源。普通分支推送不创建公开版本。
+发布稳定版：更新 VERSION，然后提交并推送对应的 v 标签。例如 VERSION 为 0.1.1 时推送 v0.1.1。标签与 VERSION 不符会失败。只有 macOS 构建、Linux 两架构安装启动测试、Windows 两架构原生 Go 测试全部成功后，工作流才创建 GitHub Release，一次上传十份包（包含两份 macOS DMG）和 SHA256SUMS.txt。失败的构建不会成为更新源。普通分支推送不创建公开版本。
 
 ## 应用内更新
 
@@ -22,6 +22,8 @@ GitHub 仓库：https://github.com/yukunwu/QuickDock
 
 ## 验证
 
-本地新增测试覆盖六目标资产匹配、DEB/RPM选择、缺失校验拒绝、真实 Wails 下载/解压 staging、篡改拒绝和未就绪操作保护。scripts/check-release.py 校验八包哈希和 ZIP 单一顶层入口；macOS 包只能含 QuickDock.app，Windows 只能含 QuickDock.exe，避免自动更新替换失败。
+本地新增测试覆盖六目标资产匹配、DEB/RPM选择、缺失校验拒绝、真实 Wails 下载/解压 staging、篡改拒绝和未就绪操作保护。scripts/check-release.py 校验十包哈希和 ZIP 单一顶层入口；macOS 包只能含 QuickDock.app，Windows 只能含 QuickDock.exe，避免自动更新替换失败。
 
 系统包安装授权／Windows 与 macOS 实际更新重启仍需各桌面的交互验收；下载 staging 测试不冒充完整进程替换测试。初次安装 0.1.1 后，下一份更高稳定版才会触发升级。0.1.0 没有本轮更新能力，需先手动安装带更新器的版本。
+
+macOS DMG 用于首次拖拽安装，含 Applications 快捷入口；构建时校验映像、只读挂载并再次验证 .app 签名和可执行文件哈希。应用内更新继续精确选择 ZIP，不会误选 DMG。

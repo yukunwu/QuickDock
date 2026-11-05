@@ -6,7 +6,9 @@ root=Path(__file__).resolve().parents[1]
 version=(root/'VERSION').read_text().strip()
 out=root/'bin/releases'
 rows=(out/'SHA256SUMS.txt').read_text().splitlines()
-assert len(rows)==8, f'Expected eight release assets, got {len(rows)}'
+assert len(rows)==10, f'Expected ten release assets, got {len(rows)}'
+names={row.split('  ',1)[1] for row in rows}
+assert {f'QuickDock-{version}-macos-{arch}.dmg' for arch in ['arm64','x64']} <= names
 for row in rows:
     digest,name=row.split('  ',1)
     assert name.startswith(f'QuickDock-{version}-'), name

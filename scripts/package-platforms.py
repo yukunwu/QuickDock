@@ -31,5 +31,6 @@ for arch,label in [('amd64','x64'),('arm64','arm64')]:
   with zipfile.ZipFile(out/f'QuickDock-{a.version}-macos-{label}.zip','w',zipfile.ZIP_DEFLATED) as z:
    for f in sorted(app.rglob('*')):
     if f.is_file():z.write(f,str(f.relative_to(app.parent)))
-files=sorted([f for f in out.iterdir() if f.suffix in ('.deb','.rpm','.zip') and f.name.startswith(f'QuickDock-{a.version}-')]);(out/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.name}\n' for f in files))
+  subprocess.run(['python3',str(root/'scripts/package-macos-dmg.py'),str(app),str(out/f'QuickDock-{a.version}-macos-{label}.dmg'),'--version',a.version],check=True)
+files=sorted([f for f in out.iterdir() if f.suffix in ('.deb','.rpm','.zip','.dmg') and f.name.startswith(f'QuickDock-{a.version}-')]);(out/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.name}\n' for f in files))
 print(f'Packaged {len(files)} archives under {out}')

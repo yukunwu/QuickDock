@@ -8,3 +8,5 @@ bin/
 *.log
 docs/HANDOFF.md
 docs/validation/
+
+__pycache__/
