@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,6 +85,27 @@ func TestScanAppLeavesAndDedup(t *testing.T) {
 	}
 	if apps[0].Name != "A" || apps[1].Name != "B" || apps[0].ID == apps[1].ID {
 		t.Fatal(apps)
+	}
+}
+
+func TestScanSkipsUnreadableBundleWithoutWarning(t *testing.T) {
+	root := t.TempDir()
+	for _, name := range []string{"Editor.app", "Qt Maintenance Tool.app/Contents/Helper.app"} {
+		if err := os.MkdirAll(filepath.Join(root, name), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var visited []string
+	apps, err := Scan([]string{root}, func(path string) (AppEntry, error) {
+		name := filepath.Base(path)
+		visited = append(visited, name)
+		if name == "Qt Maintenance Tool.app" {
+			return AppEntry{}, errors.New("无法读取应用包")
+		}
+		return AppEntry{Name: "Editor"}, nil
+	})
+	if err != nil || len(apps) != 1 || apps[0].Name != "Editor" || len(visited) != 2 {
+		t.Fatalf("apps=%+v visited=%v err=%v", apps, visited, err)
 	}
 }
 

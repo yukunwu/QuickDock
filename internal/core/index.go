@@ -36,9 +36,9 @@ func Scan(roots []string, metadata func(string) (AppEntry, error)) ([]AppEntry, 
 						entry.Path = path
 						entry.ID = fmt.Sprintf("app-%x", sha256.Sum256([]byte(real)))
 						entries = append(entries, entry)
-					} else {
-						problems = append(problems, fmt.Sprintf("%s: %v", path, e))
 					}
+					// Incomplete/unreadable bundles (for example maintenance tools)
+					// are not launchable results and do not need a user warning.
 				}
 				if d.IsDir() {
 					return filepath.SkipDir
