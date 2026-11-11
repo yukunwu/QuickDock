@@ -63,6 +63,10 @@ export default function CompactLauncher({
     return () => window.removeEventListener("focus", focus);
   }, []);
   useEffect(() => {
+    if (windowVisible) input.current?.focus();
+    else composing.current = false;
+  }, [windowVisible]);
+  useEffect(() => {
     document
       .getElementById(`compact-result-${selected}`)
       ?.scrollIntoView({ block: "nearest" });
@@ -235,9 +239,7 @@ export default function CompactLauncher({
           ) : (
             <div className="empty">
               <Search size={24} />
-              <strong>
-                {t("没有找到“{query}”", { query })}
-              </strong>
+              <strong>{t("没有找到“{query}”", { query })}</strong>
               <span>{t("试试应用名称、拼音或工具关键词")}</span>
             </div>
           )}

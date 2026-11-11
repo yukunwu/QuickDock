@@ -7,6 +7,7 @@ import * as bridge from "./bridge";
 import BookmarkEditor from "./BookmarkEditor";
 import ToolWindowButton from "./ToolWindowButton";
 import TranslationWorkspace from "./TranslationWorkspace";
+import QRCodeWorkspace from "./QRCodeWorkspace";
 import CalculatorNotebook from "./CalculatorNotebook";
 import type { Draft } from "./tools/compute";
 import { PREVIEW_LIMIT, useComputed } from "./tools/useComputed";
@@ -41,6 +42,8 @@ export default function ToolWorkspace(props: {
   back: () => void;
 }) {
   useLocale();
+  if (props.id === "qrcode")
+    return <QRCodeWorkspace back={props.back} notify={props.notify} />;
   if (props.id === "translate")
     return <TranslationWorkspace back={props.back} notify={props.notify} />;
   if (props.id === "calculator")

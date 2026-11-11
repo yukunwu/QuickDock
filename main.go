@@ -25,7 +25,7 @@ func main() {
 		log.Fatal(err)
 	}
 	service := newService(filepath.Join(dir, "QuickDock"))
-	app := application.New(application.Options{Name: "QuickDock", Description: "随唤随用的本地快捷工具", ShouldQuit: service.prepareToolQuit, Services: []application.Service{application.NewService(service)}, Assets: application.AssetOptions{Handler: application.BundledAssetFileServer(assets)}, Mac: application.MacOptions{ActivationPolicy: application.ActivationPolicyAccessory}, SingleInstance: &application.SingleInstanceOptions{UniqueID: "com.quickdock.desktop", OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+	app := application.New(application.Options{Name: "QuickDock", Description: "随唤随用的本地快捷工具", ShouldQuit: service.prepareToolQuit, OnShutdown: service.stopAppIndexMonitor, Services: []application.Service{application.NewService(service)}, Assets: application.AssetOptions{Handler: application.BundledAssetFileServer(assets)}, Mac: application.MacOptions{ActivationPolicy: application.ActivationPolicyAccessory}, SingleInstance: &application.SingleInstanceOptions{UniqueID: "com.quickdock.desktop", OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
 		if service.window != nil {
 			for _, arg := range data.Args {
 				if arg == "--toggle" {
@@ -100,7 +100,7 @@ func main() {
 				service.mu.Unlock()
 			}
 			log.Printf("shortcuts: %v", app.GlobalShortcut.GetAll())
-			service.RefreshApps()
+			service.startAppIndexMonitor()
 		}()
 	})
 	if err := app.Run(); err != nil {

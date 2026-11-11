@@ -17,14 +17,17 @@
     "lossless-json": "^4.3.0",
     "lucide-react": "^0.468.0",
     "pinyin-pro": "^3.27.0",
+    "qrcode": "1.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
+    "@types/qrcode": "1.5.6",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "jsqr": "1.4.0",
     "prettier": "^3.9.10",
     "typescript": "~5.9.3",
     "vite": "^7.1.0",

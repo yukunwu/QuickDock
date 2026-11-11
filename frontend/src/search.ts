@@ -1,6 +1,7 @@
 import { t } from "./i18n";
 import { calculate } from "./tools/calculator";
 import { pinyin } from "pinyin-pro";
+import { applicationAliases } from "./appAliases";
 import {
   tools,
   fallbackIcons,
@@ -9,19 +10,88 @@ import {
   type SearchResult,
 } from "./catalog";
 import { Globe, Equal, Search, Languages } from "lucide-react";
-const normalized = new Map<string, string>();
-function searchable(name: string) {
-  if (!normalized.has(name)) {
+type SearchTerms = {
+  literal: string;
+  compact: string;
+  pinyin: string;
+  initials: string;
+  words: string;
+  wordInitials: string;
+};
+const normalized = new Map<string, SearchTerms>();
+function fold(value: string) {
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\u0300-\u036f]/g, "");
+}
+function compact(value: string) {
+  return fold(value).replace(/[\s\p{P}\p{S}]+/gu, "");
+}
+function searchable(name: string): SearchTerms {
+  let value = normalized.get(name);
+  if (!value) {
     if (normalized.size > 5000) normalized.clear();
-    normalized.set(
-      name,
-      `${name} ${pinyin(name, { toneType: "none", type: "array" }).join("")} ${pinyin(name, { pattern: "first", toneType: "none", type: "array" }).join("")}`.toLowerCase(),
-    );
+    const words =
+      fold(name.replace(/([a-z0-9])([A-Z])/g, "$1 $2")).match(
+        /[\p{L}\p{N}]+/gu,
+      ) || [];
+    value = {
+      literal: fold(name),
+      compact: compact(name),
+      pinyin: compact(
+        pinyin(name, { toneType: "none", type: "array" }).join(""),
+      ),
+      initials: compact(
+        pinyin(name, {
+          pattern: "first",
+          toneType: "none",
+          type: "array",
+        }).join(""),
+      ),
+      words: words.join(" "),
+      wordInitials: words.map((word) => word[0]).join(""),
+    };
+    normalized.set(name, value);
   }
-  return normalized.get(name)!;
+  return value;
+}
+function nameScore(name: string, q: string, joined: string, alias = false) {
+  const value = searchable(name);
+  const acronym =
+    joined && (value.initials === joined || value.wordInitials === joined);
+  const parts = q.split(/\s+/).filter(Boolean);
+  return Math.max(
+    value.literal === q ? (alias ? 90 : 100) : 0,
+    value.literal.startsWith(q) ? (alias ? 75 : 80) : 0,
+    value.literal.includes(q) ? (alias ? 55 : 60) : 0,
+    joined && value.compact === joined ? (alias ? 88 : 95) : 0,
+    joined && value.compact.startsWith(joined) ? (alias ? 72 : 78) : 0,
+    joined && value.compact.includes(joined) ? (alias ? 52 : 58) : 0,
+    joined && value.pinyin === joined ? (alias ? 65 : 70) : 0,
+    joined && value.pinyin.startsWith(joined) ? (alias ? 48 : 50) : 0,
+    joined && value.pinyin.includes(joined) ? (alias ? 38 : 40) : 0,
+    acronym ? (alias ? 63 : 65) : 0,
+    joined &&
+      (value.initials.startsWith(joined) ||
+        value.wordInitials.startsWith(joined))
+      ? alias
+        ? 33
+        : 35
+      : 0,
+    parts.length > 1 &&
+      parts.every((part) =>
+        value.words.split(" ").some((word) => word.startsWith(part)),
+      )
+      ? alias
+        ? 46
+        : 48
+      : 0,
+  );
 }
 export function searchEntries(query: string, data: Snapshot): SearchResult[] {
-  const q = query.trim().toLowerCase();
+  const q = fold(query.trim());
+  const joined = compact(query);
   const favorites = [
     "com.apple.finder",
     "com.apple.Safari",
@@ -74,8 +144,10 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
       color: "purple",
     })),
   ];
+  const appAliases = new Map(
+    apps.map((app) => [app.id, applicationAliases(app)]),
+  );
   const score = (r: SearchResult) => {
-    const name = r.title.toLowerCase();
     const aliases =
       r.kind === "tool"
         ? tools.find((t) => t.id === r.id)?.keywords || ""
@@ -83,12 +155,19 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
           ? data.settings.bookmarks.find((b) => b.id === r.id)?.alias || ""
           : "";
     if (!q) return 1;
-    if (name === q) return 100;
-    if (name.startsWith(q)) return 80;
-    if (name.includes(q)) return 60;
-    if (searchable(r.title).includes(q) || aliases.toLowerCase().includes(q))
-      return 40;
-    return 0;
+    const direct = nameScore(r.title, q, joined);
+    const alternate =
+      r.kind === "app"
+        ? Math.max(
+            0,
+            ...(appAliases.get(r.id) || []).map((name) =>
+              nameScore(name, q, joined, true),
+            ),
+          )
+        : aliases.toLowerCase().includes(q)
+          ? 40
+          : 0;
+    return Math.max(direct, alternate);
   };
   let calculation: SearchResult[] = [];
   if (

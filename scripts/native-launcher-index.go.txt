@@ -1,0 +1,81 @@
+package main
+
+import (
+ "embed"
+ "encoding/json"
+ "fmt"
+ "os"
+ "path/filepath"
+ "strings"
+ "time"
+ "github.com/wailsapp/wails/v3/pkg/application"
+ "github.com/wailsapp/wails/v3/pkg/events"
+ "quickdock/internal/platform"
+)
+//go:embed all:frontend/dist
+var assets embed.FS
+func main() {
+ dir:=os.Getenv("QUICKDOCK_PROBE_DIR");if dir==""{panic("isolated data required")}
+ s:=newService(dir);s.state.Settings.Language="zh-CN"
+ home,_:=os.UserHomeDir()
+ fixture:=filepath.Join(home,"Applications",fmt.Sprintf("QuickDockIndexProbe-%d.app",os.Getpid()))
+ name:=fmt.Sprintf("QuickDockIndexProbe%d",os.Getpid())
+ defer os.RemoveAll(fixture)
+ app:=application.New(application.Options{Name:"QuickDock Launcher Index Probe",Services:[]application.Service{application.NewService(s)},ShouldQuit:s.prepareToolQuit,OnShutdown:s.stopAppIndexMonitor,Assets:application.AssetOptions{Handler:application.BundledAssetFileServer(assets)},Mac:application.MacOptions{ActivationPolicy:application.ActivationPolicyAccessory}})
+ s.app=app;s.shortcuts=app.GlobalShortcut
+ s.window=app.Window.NewWithOptions(application.WebviewWindowOptions{Title:"QuickDock Index Probe",Name:"probe-launcher",URL:"/",Width:780,Height:340,Frameless:true,Mac:application.MacWindow{Backdrop:application.MacBackdropTransparent}})
+ ready:=make(chan struct{},1)
+ s.window.OnWindowEvent(events.Common.WindowRuntimeReady,func(_ *application.WindowEvent){select{case ready<-struct{}{}:default:}})
+ fail:=func(message string){os.RemoveAll(fixture);fmt.Println("FAIL",message);os.Exit(1)}
+ wait:=func(label string,check func()bool){until:=time.Now().Add(25*time.Second);for !check(){if time.Now().After(until){fail("timeout "+label)};time.Sleep(20*time.Millisecond)}}
+ js:=func(condition,label string){q,_:=json.Marshal(label);s.window.ExecJS(fmt.Sprintf(`(()=>{const timer=setInterval(()=>{if(!(%s))return;clearInterval(timer);import('/wails/runtime.js').then(({Call})=>Call.ByID(4001834035,%s));},25)})()`,condition,q));wait(label,func()bool{return s.Snapshot().Usage[label].Count>0})}
+ setInput:=func(value string){q,_:=json.Marshal(value);s.window.ExecJS(fmt.Sprintf(`(()=>{const e=document.querySelector('input[aria-label="搜索应用和工具"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,%s);e.dispatchEvent(new Event('input',{bubbles:true}));})()`,q))}
+ app.Event.OnApplicationEvent(events.Common.ApplicationStarted,func(_ *application.ApplicationEvent){go func(){
+  <-ready
+  application.InvokeSync(func(){platform.ConfigureMaterial(s.window.NativeWindow())})
+  s.show();s.startAppIndexMonitor()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')`,"probe-dom-ready")
+  setInput("old query 中文")
+  js(`document.querySelector('input')?.value==='old query 中文'`,"probe-search-entered")
+  s.Hide();s.show()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')?.value==='' && !document.querySelector('.workspace')`,"probe-clean-reopen")
+  width,height:=s.window.Size();if width!=780||height!=340{fail(fmt.Sprintf("wrong launcher size %dx%d",width,height))}
+  fmt.Println("PASS native hide/show clears Dock query and resets 780x340")
+  setInput("json")
+  js(`document.querySelector('[role="option"]')?.textContent.includes('JSON')`,"probe-tool-found")
+  s.window.ExecJS(`document.querySelector('[role="option"]').click()`)
+  js(`document.querySelector('textarea[aria-label="工具输入"]')`,"probe-tool-ready")
+  s.window.ExecJS(`(()=>{const e=document.querySelector('textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,'{"nativeDraft":true}');e.dispatchEvent(new Event('input',{bubbles:true}));})()`)
+  js(`document.querySelector('textarea')?.value==='{"nativeDraft":true}'`,"probe-draft-entered")
+  s.Hide();s.show()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')?.value===''`,"probe-tool-hide-reopen")
+  setInput("json")
+  js(`document.querySelector('[role="option"]')?.textContent.includes('JSON')`,"probe-tool-refound")
+  s.window.ExecJS(`document.querySelector('[role="option"]').click()`)
+  js(`document.querySelector('textarea')?.value==='{"nativeDraft":true}'`,"probe-draft-preserved")
+  s.Hide();s.show()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')?.value===''`,"probe-back-for-index")
+  wait("initial scan",func()bool{return !s.Snapshot().Indexing&&len(s.Snapshot().Apps)>0})
+  setInput(name)
+  contents:=filepath.Join(fixture,"Contents")
+  if err:=os.MkdirAll(filepath.Join(contents,"MacOS"),0700);err!=nil{fail(err.Error())}
+  plist:=fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>com.quickdock.indexprobe.%d</string><key>CFBundleName</key><string>%s</string><key>CFBundleExecutable</key><string>Probe</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>`,os.Getpid(),name)
+  if err:=os.WriteFile(filepath.Join(contents,"Info.plist"),[]byte(plist),0600);err!=nil{fail(err.Error())}
+  if err:=os.WriteFile(filepath.Join(contents,"MacOS","Probe"),[]byte("#!/bin/sh\nexit 0\n"),0700);err!=nil{fail(err.Error())}
+  installed:=time.Now()
+  wait("automatic app install indexing",func()bool{for _,a:=range s.Snapshot().Apps{if a.Path==fixture{return true}};return false})
+  nameJSON,_:=json.Marshal(name)
+  js(fmt.Sprintf(`document.querySelector('[role="option"]')?.textContent.includes(%s) && document.querySelector('[role="option"]')?.textContent.includes('应用程序')`,nameJSON),"probe-new-app-visible")
+  fmt.Printf("PASS real ~/Applications install becomes searchable automatically in %.2fs\n",time.Since(installed).Seconds())
+  if err:=os.RemoveAll(fixture);err!=nil{fail(err.Error())}
+  wait("automatic app removal",func()bool{for _,a:=range s.Snapshot().Apps{if a.Path==fixture{return false}};return true})
+  js(`!document.querySelector('[role="option"]')?.textContent.includes('应用程序')`,"probe-removed-app-gone")
+  fmt.Println("PASS uninstall removes visible results without a manual refresh; native tool draft preserved")
+  // Time only cheap metadata stamping, not icon extraction.
+  start:=time.Now();for i:=0;i<10;i++{platform.ApplicationIndexStamp()}
+  fmt.Printf("PASS metadata stamp average %.2fms across 10 checks\n",float64(time.Since(start).Microseconds())/10000)
+  s.stopAppIndexMonitor();app.Quit()
+ }()})
+ go func(){time.Sleep(80*time.Second);fail("probe total timeout")}()
+ if err:=app.Run();err!=nil{fail(strings.TrimSpace(err.Error()))}
+}

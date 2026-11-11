@@ -6,11 +6,24 @@ char* qd_metadata(const char* raw) {
   if(!bundle)return NULL;
   NSDictionary *info=bundle.infoDictionary,*localized=bundle.localizedInfoDictionary;
   NSString *name=localized[@"CFBundleDisplayName"]?:localized[@"CFBundleName"]?:info[@"CFBundleDisplayName"]?:info[@"CFBundleName"]?:path.lastPathComponent.stringByDeletingPathExtension;
+  NSMutableOrderedSet *aliases=[NSMutableOrderedSet orderedSet];
+  for(id candidate in @[info[@"CFBundleDisplayName"]?:@"",info[@"CFBundleName"]?:@"",path.lastPathComponent.stringByDeletingPathExtension]){
+   if([candidate isKindOfClass:NSString.class]&&[candidate length]>0&&![candidate isEqualToString:name])[aliases addObject:candidate];
+  }
+  // Keep English and Chinese names searchable independent of the OS language.
+  // These are local bundle resources; do not change the process locale.
+  for(NSString *language in @[@"en",@"en_US",@"en-GB",@"zh_CN",@"zh-Hans",@"zh_TW",@"zh-Hant"]){
+   NSString *resource=[bundle pathForResource:@"InfoPlist" ofType:@"strings" inDirectory:nil forLocalization:language];
+   NSDictionary *names=resource?[NSDictionary dictionaryWithContentsOfFile:resource]:nil;
+   for(id candidate in @[names[@"CFBundleDisplayName"]?:@"",names[@"CFBundleName"]?:@""]){
+    if([candidate isKindOfClass:NSString.class]&&[candidate length]>0&&![candidate isEqualToString:name])[aliases addObject:candidate];
+   }
+  }
   NSImage *icon=[[NSWorkspace sharedWorkspace] iconForFile:path];
   NSBitmapImageRep *rep=[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL pixelsWide:96 pixelsHigh:96 bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
   [NSGraphicsContext saveGraphicsState];[NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithBitmapImageRep:rep]];[icon drawInRect:NSMakeRect(0,0,96,96) fromRect:NSZeroRect operation:NSCompositingOperationCopy fraction:1];[NSGraphicsContext restoreGraphicsState];
   NSData *png=[rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
-  NSDictionary *entry=@{@"name":name,@"bundleId":bundle.bundleIdentifier?:@"",@"icon":[@"data:image/png;base64," stringByAppendingString:[png base64EncodedStringWithOptions:0]?:@""]};
+  NSDictionary *entry=@{@"name":name,@"bundleId":bundle.bundleIdentifier?:@"",@"aliases":aliases.array,@"icon":[@"data:image/png;base64," stringByAppendingString:[png base64EncodedStringWithOptions:0]?:@""]};
   NSData *json=[NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];[rep release];
   return json?strdup([[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding] autorelease].UTF8String):NULL;
  }

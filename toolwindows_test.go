@@ -66,3 +66,21 @@ func TestToolWindowsPersistSeparatelyAndProtectCorruptState(t *testing.T) {
 		t.Fatal(state, err)
 	}
 }
+
+func TestQRCodeSettingsAndDraftPersist(t *testing.T) {
+	dir := t.TempDir()
+	s := newService(dir)
+	settings := s.state.Settings
+	settings.DisabledTools = []string{"qrcode"}
+	if err := core.Validate(settings); err != nil {
+		t.Fatal(err)
+	}
+	draft := `{"version":1,"draft":{"input":"https://example.com/?q=你好","mode":"Q","count":1024,"unit":"","zone":"","group":"","from":"","to":"","generated":""}}`
+	if err := s.SaveToolWindow("qrcode", draft); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := newService(dir).ToolWindowState("qrcode")
+	if err != nil || restored.Session != draft {
+		t.Fatal(restored, err)
+	}
+}

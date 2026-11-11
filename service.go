@@ -42,6 +42,9 @@ type Service struct {
 	apps            []core.AppEntry
 	dir             string
 	indexing        bool
+	indexPending    bool
+	scanApps        func() ([]core.AppEntry, error)
+	indexMonitor    *appIndexMonitor
 	indexError      string
 	warning         string
 	shortcutError   string
@@ -68,6 +71,7 @@ func newService(dir string) *Service {
 			s.apps = cache.Apps
 		}
 	}
+	s.initAppIndexMonitor()
 	return s
 }
 func (s *Service) Snapshot() Snapshot {
@@ -80,7 +84,11 @@ func (s *Service) Snapshot() Snapshot {
 	settings := s.state.Settings
 	settings.Bookmarks = append([]core.Bookmark{}, settings.Bookmarks...)
 	settings.DisabledTools = append([]string{}, settings.DisabledTools...)
-	return Snapshot{append([]core.AppEntry{}, s.apps...), settings, usage, s.indexing, s.warning + s.indexError, s.shortcutError}
+	apps := append([]core.AppEntry{}, s.apps...)
+	for i := range apps {
+		apps[i].Aliases = append([]string(nil), apps[i].Aliases...)
+	}
+	return Snapshot{apps, settings, usage, s.indexing, s.warning + s.indexError, s.shortcutError}
 }
 func (s *Service) SaveSettings(next core.Settings) (core.Settings, error) {
 	s.saveMu.Lock()
@@ -133,26 +141,37 @@ func (s *Service) SaveSettings(next core.Settings) (core.Settings, error) {
 func (s *Service) RefreshApps() Snapshot {
 	s.mu.Lock()
 	if s.indexing {
+		// A change during a scan must trigger another pass, not be lost.
+		s.indexPending = true
 		s.mu.Unlock()
 		return s.Snapshot()
 	}
 	s.indexing = true
 	s.mu.Unlock()
+	s.notifyAppsChanged()
 	go func() {
-		apps, err := platform.ScanApplications()
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		s.apps = apps
-		s.indexing = false
-		s.indexError = ""
-		if err != nil {
-			s.indexError = err.Error()
-		}
-		if err := core.AtomicJSON(filepath.Join(s.dir, "apps.json"), struct {
-			Version int             `json:"version"`
-			Apps    []core.AppEntry `json:"apps"`
-		}{1, apps}); err != nil {
-			s.indexError += " 索引缓存写入失败：" + err.Error()
+		for {
+			apps, err := s.scanApps()
+			s.mu.Lock()
+			s.apps = apps
+			s.indexError = ""
+			if err != nil {
+				s.indexError = err.Error()
+			}
+			if err := core.AtomicJSON(filepath.Join(s.dir, "apps.json"), struct {
+				Version int             `json:"version"`
+				Apps    []core.AppEntry `json:"apps"`
+			}{1, apps}); err != nil {
+				s.indexError += " 索引缓存写入失败：" + err.Error()
+			}
+			again := s.indexPending
+			s.indexPending = false
+			s.indexing = again
+			s.mu.Unlock()
+			s.notifyAppsChanged()
+			if !again {
+				return
+			}
 		}
 	}()
 	return s.Snapshot()
@@ -216,7 +235,11 @@ func (s *Service) SetEditing(editing bool) { s.mu.Lock(); s.editing = editing; s
 func (s *Service) Hide() {
 	s.window.ExecJS(`window.dispatchEvent(new CustomEvent("quickdock-visibility", {detail: false}))`)
 	s.window.Hide()
+	// Main tools keep their drafts in the frontend, but reopening starts at Dock.
+	s.window.SetMinSize(700, 300)
+	s.window.SetSize(780, 340)
 	s.mu.Lock()
+	s.editing = false
 	if s.idleRelease != nil {
 		s.idleRelease.Stop()
 	}
@@ -242,6 +265,7 @@ func (s *Service) cancelIdleRelease() {
 	}
 }
 func (s *Service) show() {
+	s.indexMonitor.checkSoon()
 	s.cancelIdleRelease()
 	application.InvokeSync(func() { platform.PlaceWindow(s.window.NativeWindow(), true) })
 	s.window.Show()
@@ -254,6 +278,7 @@ func (s *Service) toggle() {
 		if s.window.IsVisible() {
 			s.Hide()
 		} else {
+			s.indexMonitor.checkSoon()
 			s.cancelIdleRelease()
 			platform.PlaceWindow(s.window.NativeWindow(), true)
 			s.window.Show()

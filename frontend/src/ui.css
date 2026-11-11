@@ -854,3 +854,11 @@ html[data-runtime="preview"] .launcher-shell {
     backdrop-filter: none;
   }
 }
+
+/* QR codes stay black on white in both themes to preserve scan contrast. */
+.qr-grid { flex: 1; min-height: 0; }
+.qr-preview { display: flex; flex-direction: column; }
+.qr-preview-body { position: relative; display: grid; place-items: center; flex: 1; min-height: 0; padding: 24px; overflow: auto; }
+.qr-preview-body img { position: absolute; inset: 0; margin: auto; width: calc(100% - 32px); height: calc(100% - 32px); max-width: 280px; max-height: 280px; object-fit: contain; image-rendering: pixelated; border-radius: 3px; }
+.qr-empty { color: var(--muted); font-size: 14px; text-align: center; }
+.qr-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 12px 16px 20px; }

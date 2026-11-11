@@ -2,6 +2,7 @@ import { t } from "./i18n";
 import { defaultShortcut } from "./platform";
 import {
   Calculator,
+  QrCode,
   Languages,
   Search,
   Braces,
@@ -31,7 +32,8 @@ export type ToolID =
   | "units"
   | "text"
   | "bookmarks"
-  | "translate";
+  | "translate"
+  | "qrcode";
 export interface ToolDefinition {
   id: ToolID;
   name: string;
@@ -43,6 +45,20 @@ export interface ToolDefinition {
   version: string;
 }
 export const tools: ToolDefinition[] = [
+  {
+    id: "qrcode",
+    get name() {
+      return t("二维码生成器");
+    },
+    get subtitle() {
+      return t("将文字或网址生成二维码");
+    },
+    keywords: "qr qrcode erweima ewm 二维码 二維碼 QRコード código",
+    category: "日常",
+    icon: QrCode,
+    color: "blue",
+    version: "1.0.0",
+  },
   {
     id: "translate",
     get name() {
@@ -203,6 +219,7 @@ export interface AppEntry {
   name: string;
   path: string;
   bundleId: string;
+  aliases?: string[];
   icon?: string;
 }
 export interface Bookmark {

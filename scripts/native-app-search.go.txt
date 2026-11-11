@@ -1,0 +1,86 @@
+package main
+
+import (
+ "embed"
+ "encoding/json"
+ "fmt"
+ "os"
+ "path/filepath"
+ "strings"
+ "time"
+ "github.com/wailsapp/wails/v3/pkg/application"
+ "github.com/wailsapp/wails/v3/pkg/events"
+ "quickdock/internal/platform"
+)
+//go:embed all:frontend/dist
+var assets embed.FS
+func main() {
+ dir:=os.Getenv("QUICKDOCK_PROBE_DIR");if dir==""{panic("isolated data required")}
+ s:=newService(dir);s.state.Settings.Language="zh-CN"
+ home,_:=os.UserHomeDir()
+ fixture:=filepath.Join(home,"Applications",fmt.Sprintf("QuickDockIndexProbe-%d.app",os.Getpid()))
+ defer os.RemoveAll(fixture)
+ app:=application.New(application.Options{Name:"QuickDock Launcher Index Probe",Services:[]application.Service{application.NewService(s)},ShouldQuit:s.prepareToolQuit,OnShutdown:s.stopAppIndexMonitor,Assets:application.AssetOptions{Handler:application.BundledAssetFileServer(assets)},Mac:application.MacOptions{ActivationPolicy:application.ActivationPolicyAccessory}})
+ s.app=app;s.shortcuts=app.GlobalShortcut
+ s.window=app.Window.NewWithOptions(application.WebviewWindowOptions{Title:"QuickDock Index Probe",Name:"probe-launcher",URL:"/",Width:780,Height:340,Frameless:true,Mac:application.MacWindow{Backdrop:application.MacBackdropTransparent}})
+ ready:=make(chan struct{},1)
+ s.window.OnWindowEvent(events.Common.WindowRuntimeReady,func(_ *application.WindowEvent){select{case ready<-struct{}{}:default:}})
+ fail:=func(message string){os.RemoveAll(fixture);fmt.Println("FAIL",message);os.Exit(1)}
+ wait:=func(label string,check func()bool){until:=time.Now().Add(25*time.Second);for !check(){if time.Now().After(until){fail("timeout "+label)};time.Sleep(20*time.Millisecond)}}
+ js:=func(condition,label string){q,_:=json.Marshal(label);s.window.ExecJS(fmt.Sprintf(`(()=>{const timer=setInterval(()=>{if(!(%s))return;clearInterval(timer);import('/wails/runtime.js').then(({Call})=>Call.ByID(4001834035,%s));},25)})()`,condition,q));wait(label,func()bool{return s.Snapshot().Usage[label].Count>0})}
+ setInput:=func(value string){q,_:=json.Marshal(value);s.window.ExecJS(fmt.Sprintf(`(()=>{const e=document.querySelector('input[aria-label="搜索应用和工具"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,%s);e.dispatchEvent(new Event('input',{bubbles:true}));})()`,q))}
+ app.Event.OnApplicationEvent(events.Common.ApplicationStarted,func(_ *application.ApplicationEvent){go func(){
+  <-ready
+  application.InvokeSync(func(){platform.ConfigureMaterial(s.window.NativeWindow())})
+  s.show();s.startAppIndexMonitor()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')`,"probe-dom-ready")
+  setInput("old query 中文")
+  js(`document.querySelector('input')?.value==='old query 中文'`,"probe-search-entered")
+  s.Hide();s.show()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')?.value==='' && !document.querySelector('.workspace')`,"probe-clean-reopen")
+  width,height:=s.window.Size();if width!=780||height!=340{fail(fmt.Sprintf("wrong launcher size %dx%d",width,height))}
+  fmt.Println("PASS native hide/show clears Dock query and resets 780x340")
+  setInput("json")
+  js(`document.querySelector('[role="option"]')?.textContent.includes('JSON')`,"probe-tool-found")
+  s.window.ExecJS(`document.querySelector('[role="option"]').click()`)
+  js(`document.querySelector('textarea[aria-label="工具输入"]')`,"probe-tool-ready")
+  s.window.ExecJS(`(()=>{const e=document.querySelector('textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,'{"nativeDraft":true}');e.dispatchEvent(new Event('input',{bubbles:true}));})()`)
+  js(`document.querySelector('textarea')?.value==='{"nativeDraft":true}'`,"probe-draft-entered")
+  s.Hide();s.show()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')?.value===''`,"probe-tool-hide-reopen")
+  setInput("json")
+  js(`document.querySelector('[role="option"]')?.textContent.includes('JSON')`,"probe-tool-refound")
+  s.window.ExecJS(`document.querySelector('[role="option"]').click()`)
+  js(`document.querySelector('textarea')?.value==='{"nativeDraft":true}'`,"probe-draft-preserved")
+  s.Hide();s.show()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')?.value===''`,"probe-back-for-index")
+  wait("initial scan",func()bool{return !s.Snapshot().Indexing&&len(s.Snapshot().Apps)>0})
+  appPaths:=[]struct{path string; queries []string}{
+   {"/Applications/WeChat.app",[]string{"weixin","wei xin","wx","wechat"}},
+   {"/System/Library/CoreServices/Finder.app",[]string{"fangda","fd","finder"}},
+   {"/System/Applications/Notes.app",[]string{"beiwanglu","bwl","notes"}},
+   {"/System/Applications/System Settings.app",[]string{"xitongshezhi","xtsz","system settings","systemsettings"}},
+   {"/System/Applications/Utilities/Terminal.app",[]string{"zhongduan","zd","terminal"}},
+   {"/System/Applications/Utilities/Activity Monitor.app",[]string{"huodongjianshiqi","hdjsq","activitymonitor","am"}},
+  }
+  for i,test:=range appPaths{
+   var match *struct{ID string;Name string}
+   for _,a:=range s.Snapshot().Apps{if a.Path==test.path{match=&struct{ID string;Name string}{a.ID,a.Name};fmt.Printf("INDEX %s aliases=%v\n",a.Name,a.Aliases);break}}
+   if match==nil{fmt.Println("SKIP not installed",test.path);continue}
+   for j,query:=range test.queries{
+    setInput(query)
+    titleJSON,_:=json.Marshal(match.Name)
+    condition:=fmt.Sprintf(`document.querySelector('[role="option"]')?.textContent.startsWith(%s) && document.querySelector('[role="option"]')?.textContent.includes('应用程序')`,titleJSON)
+    if query=="am"{condition=fmt.Sprintf(`Array.from(document.querySelectorAll('[role="option"]')).some(e=>e.textContent.startsWith(%s)&&e.textContent.includes('应用程序'))`,titleJSON)}
+    js(condition,fmt.Sprintf("probe-search-%d-%d",i,j))
+    fmt.Printf("PASS native query %q => %s\n",query,match.Name)
+   }
+  }
+  // Time only cheap metadata stamping, not icon extraction.
+  start:=time.Now();for i:=0;i<10;i++{platform.ApplicationIndexStamp()}
+  fmt.Printf("PASS metadata stamp average %.2fms across 10 checks\n",float64(time.Since(start).Microseconds())/10000)
+  s.stopAppIndexMonitor();app.Quit()
+ }()})
+ go func(){time.Sleep(80*time.Second);fail("probe total timeout")}()
+ if err:=app.Run();err!=nil{fail(strings.TrimSpace(err.Error()))}
+}

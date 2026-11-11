@@ -158,3 +158,18 @@ func TestSettingsLanguagesAreBackwardCompatible(t *testing.T) {
 		t.Fatal("unsupported locale accepted")
 	}
 }
+
+func TestDesktopSearchAliasesRetainOriginalAndOtherLanguageNames(t *testing.T) {
+	raw := "[Desktop Entry]\nType=Application\nName=Text Editor\nName[en_US]=Text Editor\nName[zh_CN]=文本编辑器\nName[zh_TW]=文字編輯器\nExec=editor %U\n"
+	chinese, err := ParseDesktopEntry(raw, "zh_CN.UTF-8", "GNOME")
+	if err != nil || chinese.Name != "文本编辑器" {
+		t.Fatal(chinese, err)
+	}
+	if strings.Join(chinese.Aliases, "|") != "Text Editor|文字編輯器" {
+		t.Fatal(chinese.Aliases)
+	}
+	english, err := ParseDesktopEntry(raw, "en_US.UTF-8", "GNOME")
+	if err != nil || strings.Join(english.Aliases, "|") != "文本编辑器|文字編輯器" {
+		t.Fatal(english, err)
+	}
+}

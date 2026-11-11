@@ -7,6 +7,7 @@ export interface AppEntry {
     "path": string;
     "bundleId": string;
     "icon"?: string;
+    "aliases"?: string[] | null;
 }
 
 export interface Bookmark {

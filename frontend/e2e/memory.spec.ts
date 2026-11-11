@@ -1,4 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+async function reopenJSON(page: Page) {
+  const search = page.getByLabel("搜索应用和工具");
+  await expect(search).toHaveValue("");
+  await search.fill("json");
+  await search.press("Enter");
+}
 
 test("large results release workers, bound DOM, preserve drafts and copy full output", async ({
   page,
@@ -49,6 +55,7 @@ test("large results release workers, bound DOM, preserve drafts and copy full ou
       new CustomEvent("quickdock-visibility", { detail: true }),
     ),
   );
+  await reopenJSON(page);
   await expect(input).toHaveValue(payload);
   await expect(output).toContainText('"text"');
   await page.getByRole("button", { name: "清空输入" }).click();
@@ -82,6 +89,7 @@ test("cancelled computation cannot replace new input; repeated hide preserves la
         new CustomEvent("quickdock-visibility", { detail: true }),
       ),
     );
+    await reopenJSON(page);
     await expect(input).toHaveValue('{"latest":900719925474099312345}');
     await expect(output).toHaveText('{\n  "latest": 900719925474099312345\n}');
   }
@@ -110,7 +118,7 @@ test("idle reclamation reloads hidden heavy tools without losing drafts or revea
     page.waitForEvent("load"),
     page.evaluate(() => window.dispatchEvent(new Event("quickdock-idle"))),
   ]);
-  await expect(page.locator(".main")).toBeVisible();
+  await expect(page.locator(".launcher-shell")).toBeVisible();
   await expect(page.getByLabel("工具输入")).toHaveCount(0);
   expect(
     await page.evaluate(() => history.state?.quickdockSession),
@@ -120,6 +128,7 @@ test("idle reclamation reloads hidden heavy tools without losing drafts or revea
       new CustomEvent("quickdock-visibility", { detail: true }),
     ),
   );
+  await reopenJSON(page);
   await expect(page.getByLabel("工具输入")).toHaveValue(payload);
   await expect(page.getByLabel("工具结果")).toContainText('"text"');
   await page.getByRole("button", { name: "清空输入" }).click();
@@ -132,12 +141,13 @@ test("idle reclamation reloads hidden heavy tools without losing drafts or revea
     page.waitForEvent("load"),
     page.evaluate(() => window.dispatchEvent(new Event("quickdock-idle"))),
   ]);
-  await expect(page.locator(".main")).toBeVisible();
+  await expect(page.locator(".launcher-shell")).toBeVisible();
   await page.evaluate(() =>
     window.dispatchEvent(
       new CustomEvent("quickdock-visibility", { detail: true }),
     ),
   );
+  await reopenJSON(page);
   await expect(page.getByLabel("工具输入")).toHaveValue("");
   await expect(page.getByLabel("工具结果")).toBeEmpty();
 });
@@ -163,6 +173,7 @@ test("session quota failure keeps live input instead of discarding it", async ({
       new CustomEvent("quickdock-visibility", { detail: true }),
     );
   });
+  await reopenJSON(page);
   await expect(page.getByLabel("工具输入")).toHaveValue(payload);
   await expect(page.getByLabel("工具结果")).toContainText('"text"');
 });

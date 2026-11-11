@@ -69,9 +69,14 @@ func TestFailedWriteRollsBackNewShortcut(t *testing.T) {
 func TestSnapshotDetachedAndUsagePersists(t *testing.T) {
 	s := newService(t.TempDir())
 	s.state.Settings.Bookmarks = []core.Bookmark{{ID: "site", Name: "Docs", URL: "https://example.com"}}
+	s.apps = []core.AppEntry{{ID: "fixture", Name: "应用", Aliases: []string{"English Name"}}}
 	snapshot := s.Snapshot()
 	snapshot.Settings.Bookmarks[0].Name = "changed"
 	snapshot.Usage["bad"] = core.Usage{Count: 99}
+	snapshot.Apps[0].Aliases[0] = "changed"
+	if s.Snapshot().Apps[0].Aliases[0] != "English Name" {
+		t.Fatal("snapshot app aliases mutate service state")
+	}
 	if s.Snapshot().Settings.Bookmarks[0].Name != "Docs" || s.Snapshot().Usage["bad"].Count != 0 {
 		t.Fatal("snapshot aliases mutable state")
 	}

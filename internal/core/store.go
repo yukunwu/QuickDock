@@ -32,11 +32,12 @@ type Usage struct {
 	LastUsed int64 `json:"lastUsed"`
 }
 type AppEntry struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Path     string `json:"path"`
-	BundleID string `json:"bundleId"`
-	Icon     string `json:"icon,omitempty"`
+	ID       string   `json:"id"`
+	Name     string   `json:"name"`
+	Path     string   `json:"path"`
+	BundleID string   `json:"bundleId"`
+	Icon     string   `json:"icon,omitempty"`
+	Aliases  []string `json:"aliases,omitempty"`
 }
 type State struct {
 	Version  int              `json:"version"`
@@ -65,7 +66,7 @@ func Validate(s Settings) error {
 		return errors.New("快捷键不能为空")
 	}
 	valid := map[string]bool{}
-	for _, id := range []string{"calculator", "timestamp", "json", "base64", "url", "uuid", "hash", "units", "text", "bookmarks", "translate", "google"} {
+	for _, id := range []string{"calculator", "timestamp", "json", "base64", "url", "uuid", "hash", "units", "text", "bookmarks", "translate", "google", "qrcode"} {
 		valid[id] = true
 	}
 	for _, id := range s.DisabledTools {

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func ScanApplications() ([]core.AppEntry, error) {
+func applicationRoots() []string {
 	home, _ := os.UserHomeDir()
 	data := os.Getenv("XDG_DATA_HOME")
 	if data == "" {
@@ -25,6 +25,12 @@ func ScanApplications() ([]core.AppEntry, error) {
 		roots = append(roots, filepath.Join(dir, "applications"))
 	}
 	roots = append(roots, "/var/lib/flatpak/exports/share/applications", filepath.Join(home, ".local/share/flatpak/exports/share/applications"), "/var/lib/snapd/desktop/applications")
+	return roots
+}
+func ApplicationIndexStamp() [32]byte {
+	return core.ApplicationIndexStamp(applicationRoots(), ".desktop")
+}
+func ScanApplications() ([]core.AppEntry, error) {
 	locale := os.Getenv("LC_ALL")
 	if locale == "" {
 		locale = os.Getenv("LC_MESSAGES")
@@ -32,7 +38,7 @@ func ScanApplications() ([]core.AppEntry, error) {
 	if locale == "" {
 		locale = os.Getenv("LANG")
 	}
-	return core.ScanDesktopFiles(roots, locale, os.Getenv("XDG_CURRENT_DESKTOP"), func(name string) bool { _, err := exec.LookPath(name); return err == nil }, linuxIcon)
+	return core.ScanDesktopFiles(applicationRoots(), locale, os.Getenv("XDG_CURRENT_DESKTOP"), func(name string) bool { _, err := exec.LookPath(name); return err == nil }, linuxIcon)
 }
 func linuxIcon(name string) string {
 	if name == "" {

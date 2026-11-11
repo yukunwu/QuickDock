@@ -15,6 +15,7 @@ import (
 type DesktopEntry struct {
 	Name, Icon, TryExec string
 	Hidden              bool
+	Aliases             []string
 }
 
 func ParseDesktopEntry(raw, locale, desktop string) (DesktopEntry, error) {
@@ -63,7 +64,16 @@ func ParseDesktopEntry(raw, locale, desktop string) (DesktopEntry, error) {
 	if values["Type"] != "Application" || strings.TrimSpace(name) == "" || (values["Exec"] == "" && values["DBusActivatable"] != "true") {
 		hidden = true
 	}
-	return DesktopEntry{Name: unescape(name), Icon: unescape(values["Icon"]), TryExec: unescape(values["TryExec"]), Hidden: hidden}, nil
+	aliases := []string{}
+	seen := map[string]bool{unescape(name): true}
+	for _, key := range []string{"Name", "Name[en]", "Name[en_US]", "Name[en_GB]", "Name[zh_CN]", "Name[zh_TW]", "Name[zh_HK]"} {
+		candidate := unescape(values[key])
+		if candidate != "" && !seen[candidate] {
+			aliases = append(aliases, candidate)
+			seen[candidate] = true
+		}
+	}
+	return DesktopEntry{Name: unescape(name), Icon: unescape(values["Icon"]), TryExec: unescape(values["TryExec"]), Hidden: hidden, Aliases: aliases}, nil
 }
 func ScanDesktopFiles(roots []string, locale, desktop string, available func(string) bool, icon func(string) string) ([]AppEntry, error) {
 	rows := []AppEntry{}
@@ -96,7 +106,7 @@ func ScanDesktopFiles(roots []string, locale, desktop string, available func(str
 			if err != nil || entry.Hidden || entry.TryExec != "" && !available(entry.TryExec) {
 				return nil
 			}
-			rows = append(rows, AppEntry{ID: fmt.Sprintf("app-%x", sha256.Sum256([]byte(id))), Name: entry.Name, Path: path, BundleID: id, Icon: icon(entry.Icon)})
+			rows = append(rows, AppEntry{ID: fmt.Sprintf("app-%x", sha256.Sum256([]byte(id))), Name: entry.Name, Path: path, BundleID: id, Icon: icon(entry.Icon), Aliases: entry.Aliases})
 			return nil
 		})
 		if err != nil && !os.IsNotExist(err) {

@@ -4,6 +4,8 @@
 
 支持简体中文、日本語、English、繁體中文、Español，默认跟随系统；可在偏好设置切换，保留工具输入。
 
+当前 `online` 分支包含二维码生成器、应用自动索引、Dock 重开清空搜索及应用拼音／英文搜索增强。这些更新尚未发布为新版本；公开稳定版仍为 v0.1.4。
+
 ## 本地运行
 
 支持 macOS / Windows / Linux 的 arm64 与 x64，安装包由 GitHub Actions 自动编译并发布到 [Releases](https://github.com/yukunwu/QuickDock/releases)。本地打包输出位于 `bin/releases/`。Linux 同时提供 Debian 系 `.deb` 和 Fedora／Red Hat 系 `.rpm`。系统依赖、安装方式及实测范围见 [跨平台验证](docs/CROSS-PLATFORM-VALIDATION.md)。
@@ -17,21 +19,23 @@ open /Applications/QuickDock.app
 - macOS `Option+Space`；Windows／Linux `Ctrl+Alt+Space`：显示／隐藏；设置中选择修饰键，Space 固定。
 - Wayland 若无全局快捷键 Portal，在系统键盘设置中把快捷键命令设为 `quickdock --toggle`；重复执行切换原窗口。
 - macOS／Windows／Linux X11 唤起跟随鼠标所在屏幕；Wayland 由桌面系统安排窗口位置。
-- 空搜索展示最近使用的应用／工具，方向键选择，Enter 执行；支持中文、拼音、首字母和网址别名。
+- 空搜索展示最近使用的应用／工具，方向键选择，Enter 执行；支持中文、全拼、拼音首字母、英文名及英文缩写；例如微信可输入 `weixin`／`wx`／`wechat`，系统设置可输入 `xtsz`／`systemsettings`。支持空格、大小写与全角输入；网址仍支持别名。
 - 输入无应用匹配时，提供 Google 搜索与翻译快捷项；搜索使用默认浏览器，翻译保留在当前 Dock。设置可分别关闭这两个入口。
 - 顶部设置按钮或 `⌘ ,` 进入设置；底部“全部工具”进入工具库。
-- 工具页占满窗口，不展示应用侧边栏和导航。Esc 回紧凑 Dock，Dock 再按 Esc 隐藏；独立工具 Esc 保存后关闭。`⌘ W` 隐藏，输入在本次会话中保留。
+- 工具页占满窗口，不展示应用侧边栏和导航。Esc 回紧凑 Dock，Dock 再按 Esc 隐藏；独立工具 Esc 保存后关闭。`⌘ W` 隐藏；重新唤起清空搜索并回到紧凑 Dock，工具草稿仍在本次会话保留。
 - 启动器失焦隐藏；工具和设置失焦保留。菜单栏闪电图标 可打开、刷新索引或退出。
+- 每 3 秒轻量检查应用安装目录，新增、移除或更新入口后自动刷新索引；唤起时立即检查，5 分钟兜底同步，手动刷新仍可用。
 - 重复启动只唤起原实例。
 
 macOS `.app` 使用 ad-hoc 签名，不含 Developer ID 签名或公证。内置自动更新检查与手动下载安装，发布包校验 SHA256；详情见 [自动更新](docs/UPDATES.md)。无需前端开发服务器即可运行。
 
 ![原生启动面板](docs/screenshots/07-native-launcher.png)
 
-## 十一类内置工具
+## 十二类内置工具
 
 | 工具 | 已实现功能 |
 | --- | --- |
+| 二维码生成器 | 本机生成文字／网址二维码，尺寸与容错级别选择；PNG／SVG导出、SVG复制，独立窗口恢复输入 |
 | 翻译 | 原生内嵌Google翻译网页；Dock快捷入口／独立窗口、页面输入、原文与语言恢复 |
 | 计算稿纸 | 多行四则／括号／百分比，#备注，ans引用上一结果；逐行错误；⌘Enter保存本地历史，可载入／删除／清空；保留搜索内快速计算 |
 | 时间戳 | 秒／毫秒、时间戳／日期双向、本地／UTC；无效日期和时区跳跃校验 |

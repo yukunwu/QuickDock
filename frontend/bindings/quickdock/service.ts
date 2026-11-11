@@ -89,6 +89,14 @@ export function SaveCalculation(source: string, results: string[] | null): $Canc
     return $Call.ByID(18935457, source, results);
 }
 
+/**
+ * SaveQRCode only writes to a path explicitly selected in the native save dialog.
+ * An empty selection is cancellation, not an error.
+ */
+export function SaveQRCode(format: string, data: string): $CancellablePromise<boolean> {
+    return $Call.ByID(3807186914, format, data);
+}
+
 export function SaveSettings(next: core$0.Settings): $CancellablePromise<core$0.Settings> {
     return $Call.ByID(1052353477, next);
 }

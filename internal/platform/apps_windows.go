@@ -29,8 +29,18 @@ func powershell(script string, extraEnv ...string) ([]byte, error) {
 	cmd.SysProcAttr = &windows.SysProcAttr{HideWindow: true}
 	return cmd.Output()
 }
+func applicationRoots() []string {
+	roots := []string{}
+	for _, folder := range []*windows.KNOWNFOLDERID{windows.FOLDERID_StartMenu, windows.FOLDERID_CommonStartMenu, windows.FOLDERID_Desktop, windows.FOLDERID_PublicDesktop} {
+		if path, err := windows.KnownFolderPath(folder, 0); err == nil && path != "" {
+			roots = append(roots, path)
+		}
+	}
+	return roots
+}
+func ApplicationIndexStamp() [32]byte { return core.ApplicationIndexStamp(applicationRoots(), ".lnk") }
 func ScanApplications() ([]core.AppEntry, error) {
-	raw, err := powershell(`$ErrorActionPreference='Stop';[Console]::OutputEncoding=[Text.UTF8Encoding]::new();Add-Type -AssemblyName System.Drawing;$shell=New-Object -ComObject WScript.Shell;$roots=@([Environment]::GetFolderPath('StartMenu'),[Environment]::GetFolderPath('CommonStartMenu'),[Environment]::GetFolderPath('Desktop'),[Environment]::GetFolderPath('CommonDesktopDirectory'));$rows=@();foreach($root in $roots){if(!$root){continue};Get-ChildItem -LiteralPath $root -Filter *.lnk -Recurse -ErrorAction SilentlyContinue|ForEach-Object {try{$link=$shell.CreateShortcut($_.FullName);if(!$link.TargetPath -or [IO.Path]::GetExtension($link.TargetPath) -ne '.exe'){return};$icon='';try{$image=[Drawing.Icon]::ExtractAssociatedIcon($link.TargetPath);if($image){$bitmap=$image.ToBitmap();$stream=New-Object IO.MemoryStream;$bitmap.Save($stream,[Drawing.Imaging.ImageFormat]::Png);$icon='data:image/png;base64,'+[Convert]::ToBase64String($stream.ToArray());$stream.Dispose();$bitmap.Dispose();$image.Dispose()}}catch{};$rows+=@{name=$_.BaseName;path=$_.FullName;bundleId=$link.TargetPath;icon=$icon}}catch{}}};try{$rows+=@(Get-StartApps|Where-Object {$_.AppID -like '*!*'}|ForEach-Object {@{name=$_.Name;path=('shell:AppsFolder\'+$_.AppID);bundleId=$_.AppID;icon=''}})}catch{};ConvertTo-Json -InputObject @($rows) -Depth 4 -Compress`)
+	raw, err := powershell(`$ErrorActionPreference='Stop';[Console]::OutputEncoding=[Text.UTF8Encoding]::new();Add-Type -AssemblyName System.Drawing;$shell=New-Object -ComObject WScript.Shell;$roots=@([Environment]::GetFolderPath('StartMenu'),[Environment]::GetFolderPath('CommonStartMenu'),[Environment]::GetFolderPath('Desktop'),[Environment]::GetFolderPath('CommonDesktopDirectory'));$rows=@();foreach($root in $roots){if(!$root){continue};Get-ChildItem -LiteralPath $root -Filter *.lnk -Recurse -ErrorAction SilentlyContinue|ForEach-Object {try{$link=$shell.CreateShortcut($_.FullName);if(!$link.TargetPath -or [IO.Path]::GetExtension($link.TargetPath) -ne '.exe'){return};$icon='';try{$image=[Drawing.Icon]::ExtractAssociatedIcon($link.TargetPath);if($image){$bitmap=$image.ToBitmap();$stream=New-Object IO.MemoryStream;$bitmap.Save($stream,[Drawing.Imaging.ImageFormat]::Png);$icon='data:image/png;base64,'+[Convert]::ToBase64String($stream.ToArray());$stream.Dispose();$bitmap.Dispose();$image.Dispose()}}catch{};$rows+=@{name=$_.BaseName;path=$_.FullName;bundleId=$link.TargetPath;aliases=@([IO.Path]::GetFileNameWithoutExtension($link.TargetPath));icon=$icon}}catch{}}};try{$rows+=@(Get-StartApps|Where-Object {$_.AppID -like '*!*'}|ForEach-Object {@{name=$_.Name;path=('shell:AppsFolder\'+$_.AppID);bundleId=$_.AppID;icon=''}})}catch{};ConvertTo-Json -InputObject @($rows) -Depth 4 -Compress`)
 	if err != nil {
 		return []core.AppEntry{}, errors.New("Windows开始菜单索引失败，请确认系统PowerShell可用")
 	}

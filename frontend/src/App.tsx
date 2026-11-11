@@ -68,11 +68,24 @@ export default function App() {
   useEffect(() => {
     let active = true;
     let notified = false;
-    // Complete cleanup in the native notification turn, before WebKit suspends
-    // background work. Showing restores the draft and recomputes its result.
+    // Reset the launcher only on an actual native hide. Ordinary focus/tab
+    // changes must preserve input, including when using an independent tool.
     const nativeVisibility = (event: Event) => {
       notified = true;
-      flushSync(() => setVisible((event as CustomEvent<boolean>).detail));
+      const shown = (event as CustomEvent<boolean>).detail;
+      flushSync(() => {
+        setVisible(shown);
+        if (!shown) {
+          setPage("launch");
+          setActiveTool(null);
+          setQuery("");
+          setSelected(0);
+          setExpanded(false);
+          setTranslationOpen(false);
+          setCategory("全部");
+          setToast("");
+        }
+      });
     };
     const browserVisibility = () => {
       notified = true;
@@ -145,8 +158,10 @@ export default function App() {
     void load();
     const onFocus = () => void load();
     window.addEventListener("focus", onFocus);
+    window.addEventListener("quickdock-apps-changed", onFocus);
     return () => {
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("quickdock-apps-changed", onFocus);
       clearTimeout(toastTimer.current);
     };
   }, [load]);

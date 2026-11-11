@@ -270,15 +270,60 @@ export async function googleTranslationPage(
   );
 }
 
-export type UpdateInfo = { current: string; version: string; state: string; error: string; notes: string; progress: number; linux: boolean };
+export type UpdateInfo = {
+  current: string;
+  version: string;
+  state: string;
+  error: string;
+  notes: string;
+  progress: number;
+  linux: boolean;
+};
 export async function updateStatus(): Promise<UpdateInfo> {
-  return native ? (await backend()).UpdateStatus() : {current:"0.1.4", version:"", state:"idle", error:"", notes:"", progress:0, linux:false};
+  return native
+    ? (await backend()).UpdateStatus()
+    : {
+        current: "0.1.4",
+        version: "",
+        state: "idle",
+        error: "",
+        notes: "",
+        progress: 0,
+        linux: false,
+      };
 }
 export async function checkForUpdates(): Promise<UpdateInfo> {
   if (!native) throw Error("请在桌面版中检查更新");
   return (await backend()).CheckForUpdates();
 }
-export async function installUpdate() { if (native) await (await backend()).InstallUpdate(); }
-export async function restartAfterUpdate() { if (native) await (await backend()).RestartAfterUpdate(); }
+export async function installUpdate() {
+  if (native) await (await backend()).InstallUpdate();
+}
+export async function restartAfterUpdate() {
+  if (native) await (await backend()).RestartAfterUpdate();
+}
 
-export async function syncUILanguage(language:string){if(native) await (await backend()).SyncUILanguage(language);}
+export async function syncUILanguage(language: string) {
+  if (native) await (await backend()).SyncUILanguage(language);
+}
+
+export async function saveQRCode(
+  format: "png" | "svg",
+  data: string,
+): Promise<boolean> {
+  if (native) return (await backend()).SaveQRCode(format, data);
+  const content =
+    format === "svg"
+      ? data
+      : Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+  const blob = new Blob([content], {
+    type: format === "svg" ? "image/svg+xml" : "image/png",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `QuickDock-QR.${format}`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}

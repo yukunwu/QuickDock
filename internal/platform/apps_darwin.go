@@ -7,9 +7,13 @@ import (
 	"quickdock/internal/core"
 )
 
-func ScanApplications() ([]core.AppEntry, error) {
+func applicationRoots() []string {
 	home, _ := os.UserHomeDir()
-	return core.Scan([]string{"/Applications", filepath.Join(home, "Applications"), "/System/Applications", "/System/Library/CoreServices/Finder.app"}, func(path string) (core.AppEntry, error) {
+	return []string{"/Applications", filepath.Join(home, "Applications"), "/System/Applications", "/System/Library/CoreServices/Finder.app"}
+}
+func ApplicationIndexStamp() [32]byte { return core.ApplicationIndexStamp(applicationRoots(), ".app") }
+func ScanApplications() ([]core.AppEntry, error) {
+	return core.Scan(applicationRoots(), func(path string) (core.AppEntry, error) {
 		return application.InvokeSyncWithResultAndError(func() (core.AppEntry, error) { return Metadata(path) })
 	})
 }
