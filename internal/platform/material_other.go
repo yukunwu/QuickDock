@@ -4,4 +4,6 @@ package platform
 
 import "unsafe"
 
-func ConfigureMaterial(window unsafe.Pointer) {}
+func ConfigureMaterial(window unsafe.Pointer, theme string) {}
+
+func SetMaterialTheme(window unsafe.Pointer, theme string) {}

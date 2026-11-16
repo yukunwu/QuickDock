@@ -22,7 +22,8 @@ type windowsGoogle struct {
 
 var windowsGooglePages = map[uintptr]*windowsGoogle{}
 
-func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) error {
+func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func(), onHistory func(string)) error {
+	setGoogleHistory(window, onHistory)
 	var options googleOptions
 	if err := json.Unmarshal([]byte(raw), &options); err != nil {
 		return err
@@ -45,7 +46,7 @@ func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) 
 			return errors.New("Google网页无法启动，请安装Microsoft Edge WebView2 Runtime")
 		}
 		windowsGooglePages[parent] = page
-		script := strings.ReplaceAll(googleDraftScript, "QD_SEND", "window.chrome.webview.postMessage")
+		script := strings.ReplaceAll(googleDraftScript+googleHistoryScript, "QD_SEND", "window.chrome.webview.postMessage")
 		browser.MessageCallback = func(raw string, _ *edge.ICoreWebView2, args *edge.ICoreWebView2WebMessageReceivedEventArgs) {
 			source, err := args.GetSource()
 			if err != nil || !strings.HasPrefix(source, "https://translate.google.com/") {
@@ -58,6 +59,10 @@ func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) 
 				if page.escape != nil {
 					page.escape()
 				}
+				return
+			}
+			if action.Action == "history" {
+				googleHistory(parent, raw)
 				return
 			}
 			var state googleState
@@ -95,6 +100,7 @@ func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) 
 	return nil
 }
 func DetachGooglePage(window unsafe.Pointer) {
+	setGoogleHistory(window, nil)
 	page := windowsGooglePages[uintptr(window)]
 	if page == nil {
 		return

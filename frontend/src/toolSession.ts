@@ -110,6 +110,27 @@ if (saved) {
   history.replaceState(other, "");
 }
 saved = undefined;
+// Opening a tool from a search intent replaces only its input; options such
+// as the time tool's parsing zone stay as the user left them.
+export function seedToolInput(id: ToolID, input: string) {
+  const old = drafts.get(id);
+  drafts.set(id, {
+    mode: "",
+    unit: "",
+    zone: "",
+    group: "",
+    from: "",
+    to: "",
+    count: 0,
+    generated: "",
+    ...old,
+    // The notebook keeps earlier lines; the expression becomes the last one.
+    input:
+      id === "calculator" && old?.input.trim()
+        ? `${old.input.trimEnd()}\n${input}`
+        : input,
+  });
+}
 let heavyWork = false;
 export function markHeavyWork() {
   heavyWork = true;

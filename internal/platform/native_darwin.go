@@ -4,7 +4,7 @@ package platform
 #cgo CFLAGS: -x objective-c
 #cgo LDFLAGS: -framework Cocoa -framework CFNetwork -framework WebKit
 #include <stdlib.h>
-void qd_google_attach(void* window,const char* path,const char* json);
+void qd_google_attach(void* window,const char* path,const char* json,const char* history);
 void qd_google_detach(void* window);
 void qd_google_flush(void* window);
 char* qd_proxy(const char* raw);
@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"quickdock/internal/core"
+	"strings"
 	"unsafe"
 )
 
@@ -74,17 +75,21 @@ func SystemProxy(target string) (string, error) {
 	return value, nil
 }
 
-func AttachGooglePage(window unsafe.Pointer, path, options string, onEscape func()) error {
+func AttachGooglePage(window unsafe.Pointer, path, options string, onEscape func(), onHistory func(string)) error {
 	setGoogleEscape(window, onEscape)
+	setGoogleHistory(window, onHistory)
 	p := C.CString(path)
 	o := C.CString(options)
+	h := C.CString(strings.ReplaceAll(googleHistoryScript, "QD_SEND", "window.webkit.messageHandlers.quickdockGoogleDraft.postMessage"))
 	defer C.free(unsafe.Pointer(p))
 	defer C.free(unsafe.Pointer(o))
-	C.qd_google_attach(window, p, o)
+	defer C.free(unsafe.Pointer(h))
+	C.qd_google_attach(window, p, o, h)
 	return nil
 }
 func DetachGooglePage(window unsafe.Pointer) {
 	C.qd_google_detach(window)
 	setGoogleEscape(window, nil)
+	setGoogleHistory(window, nil)
 }
 func FlushGooglePage(window unsafe.Pointer) { C.qd_google_flush(window) }

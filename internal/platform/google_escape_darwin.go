@@ -1,5 +1,6 @@
 package platform
 
+// #include <stdlib.h>
 import "C"
 import (
 	"sync"
@@ -21,4 +22,9 @@ func qdGoogleEscape(window unsafe.Pointer) {
 	if handler, ok := googleEscapeHandlers.Load(uintptr(window)); ok {
 		handler.(func())()
 	}
+}
+
+//export qdGoogleHistory
+func qdGoogleHistory(window unsafe.Pointer, raw *C.char) {
+	googleHistory(uintptr(window), C.GoString(raw))
 }

@@ -46,10 +46,54 @@ export function hash(text: string, algorithm: string) {
   if (!fn) throw new Error("未知哈希算法");
   return fn(text);
 }
-export function uuids(count: number) {
+export type UUIDVersion = "v4" | "v7";
+export function uuids(count: number, version: UUIDVersion = "v4") {
   if (!Number.isInteger(count) || count < 1 || count > 1000)
     throw new Error("数量必须为 1–1000 的整数");
-  return Array.from({ length: count }, () => crypto.randomUUID()).join("\n");
+  const make = version === "v7" ? uuidV7 : () => crypto.randomUUID();
+  return Array.from({ length: count }, make).join("\n");
+}
+// RFC 9562 v7: 48-bit Unix ms, then random bits; a per-call counter in the
+// rand_a field keeps ids generated within one millisecond strictly ordered.
+let v7Last = 0,
+  v7Seq = 0;
+export function uuidV7(now = Date.now()) {
+  if (now <= v7Last) {
+    v7Seq = (v7Seq + 1) & 0xfff;
+    if (v7Seq === 0) v7Last++;
+  } else {
+    v7Last = now;
+    v7Seq = crypto.getRandomValues(new Uint16Array(1))[0] & 0x7ff;
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let ms = v7Last;
+  for (let i = 5; i >= 0; i--) {
+    bytes[i] = ms % 256;
+    ms = Math.floor(ms / 256);
+  }
+  bytes[6] = 0x70 | (v7Seq >> 8);
+  bytes[7] = v7Seq & 0xff;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
+    "",
+  );
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+export type UUIDFormat = {
+  upper: boolean;
+  hyphens: boolean;
+  output: "lines" | "json" | "csv" | "sql";
+};
+export function formatUUID(id: string, format: UUIDFormat) {
+  const text = format.hyphens ? id : id.replace(/-/g, "");
+  return format.upper ? text.toUpperCase() : text.toLowerCase();
+}
+export function formatUUIDs(ids: string[], format: UUIDFormat) {
+  const list = ids.map((id) => formatUUID(id, format));
+  if (format.output === "json") return JSON.stringify(list, null, 2);
+  if (format.output === "csv") return list.join(", ");
+  if (format.output === "sql") return list.map((id) => `'${id}'`).join(", ");
+  return list.join("\n");
 }
 export function timestamp(
   text: string,

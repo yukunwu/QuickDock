@@ -9,6 +9,9 @@ import ToolWindowButton from "./ToolWindowButton";
 import TranslationWorkspace from "./TranslationWorkspace";
 import QRCodeWorkspace from "./QRCodeWorkspace";
 import CalculatorNotebook from "./CalculatorNotebook";
+import UUIDWorkspace from "./UUIDWorkspace";
+import TimeWorkspace from "./TimeWorkspace";
+import CurrencyWorkspace from "./CurrencyWorkspace";
 import type { Draft } from "./tools/compute";
 import { PREVIEW_LIMIT, useComputed } from "./tools/useComputed";
 import { drafts } from "./toolSession";
@@ -19,11 +22,9 @@ function initial(id: ToolID): Draft {
         ? '{"name":"QuickDock","largeInteger":9007199254740993}'
         : id === "calculator"
           ? "(128 + 64) * 15%"
-          : id === "timestamp"
-            ? String(Math.floor(Date.now() / 1000))
-            : id === "units"
-              ? "1"
-              : "",
+          : id === "units"
+            ? "1"
+            : "",
     mode: id === "hash" ? "SHA256" : id === "text" ? "trim" : "encode",
     unit: "s",
     zone: "local",
@@ -31,7 +32,7 @@ function initial(id: ToolID): Draft {
     from: "米 m",
     to: "千米 km",
     count: 1,
-    generated: id === "uuid" ? engine.uuids(1) : "",
+    generated: "",
   };
 }
 export default function ToolWorkspace(props: {
@@ -48,6 +49,12 @@ export default function ToolWorkspace(props: {
     return <TranslationWorkspace back={props.back} notify={props.notify} />;
   if (props.id === "calculator")
     return <CalculatorNotebook back={props.back} notify={props.notify} />;
+  if (props.id === "uuid")
+    return <UUIDWorkspace back={props.back} notify={props.notify} />;
+  if (props.id === "timestamp")
+    return <TimeWorkspace back={props.back} notify={props.notify} />;
+  if (props.id === "currency")
+    return <CurrencyWorkspace back={props.back} notify={props.notify} />;
   return <Workspace key={props.id} {...props} />;
 }
 function Workspace({
@@ -145,14 +152,9 @@ function Workspace({
         <>
           <div className="workspace-options">
             <span className="tag">{t("本地处理")}</span>
-            {id !== "uuid" && (
-              <button
-                className="secondary"
-                onClick={() => update({ input: "" })}
-              >
-                {t("清空输入")}
-              </button>
-            )}
+            <button className="secondary" onClick={() => update({ input: "" })}>
+              {t("清空输入")}
+            </button>
             {id === "calculator" && <span>+ − × ÷ ( ) · 15% = 0.15</span>}
             {id === "json" &&
               select(t("格式"), "mode", [
@@ -170,37 +172,6 @@ function Workspace({
                     ? t("UTF-8 文本 · 标准 Base64")
                     : t("URL 组件语义（+ 不转为空格）")}
                 </span>
-              </>
-            )}
-            {id === "timestamp" && (
-              <>
-                {select(t("方向"), "mode", [
-                  ["encode", t("时间戳 → 日期")],
-                  ["date", t("日期 → 时间戳")],
-                ])}
-                {select(t("单位"), "unit", [
-                  ["s", t("秒 s")],
-                  ["ms", t("毫秒 ms")],
-                ])}
-                {select(t("时区"), "zone", [
-                  ["local", t("本地时区")],
-                  ["utc", "UTC"],
-                ])}
-                <button
-                  className="secondary"
-                  onClick={() =>
-                    update({
-                      input: String(
-                        state.unit === "s"
-                          ? Math.floor(Date.now() / 1000)
-                          : Date.now(),
-                      ),
-                      mode: "encode",
-                    })
-                  }
-                >
-                  {t("当前时间")}
-                </button>
               </>
             )}
             {id === "hash" &&
@@ -253,62 +224,23 @@ function Workspace({
                 )}
               </>
             )}
-            {id === "uuid" && (
-              <>
-                <label>
-                  {t("数量")}{" "}
-                  <input
-                    aria-label={t("UUID 数量")}
-                    type="number"
-                    min="1"
-                    max="1000"
-                    value={state.count}
-                    onChange={(e) => update({ count: Number(e.target.value) })}
-                  />
-                </label>
-                <button
-                  className="primary"
-                  onClick={() => {
-                    try {
-                      update({ generated: engine.uuids(state.count) });
-                    } catch (e) {
-                      notify(errorText(e));
-                    }
-                  }}
-                >
-                  {t("生成 UUID v4")}
-                </button>
-              </>
-            )}
           </div>
-          <div
-            className={`editor-grid ${id === "uuid" ? "single-editor" : ""}`}
-          >
-            {id !== "uuid" && (
-              <div className="editor-pane">
-                <div className="editor-label">
-                  {t("输入")}
-                  <span>
-                    {id === "timestamp" && state.mode === "date"
-                      ? "YYYY-MM-DD HH:mm:ss"
-                      : id === "text"
-                        ? localizedStats(inputStats)
-                        : t("即时转换")}
-                  </span>
-                </div>
-                <textarea
-                  aria-label={t("工具输入")}
-                  spellCheck={false}
-                  placeholder={
-                    id === "timestamp" && state.mode === "date"
-                      ? "2026-11-04 12:00:00"
-                      : t("在这里输入…")
-                  }
-                  value={state.input}
-                  onChange={(e) => update({ input: e.target.value })}
-                />
+          <div className="editor-grid">
+            <div className="editor-pane">
+              <div className="editor-label">
+                {t("输入")}
+                <span>
+                  {id === "text" ? localizedStats(inputStats) : t("即时转换")}
+                </span>
               </div>
-            )}
+              <textarea
+                aria-label={t("工具输入")}
+                spellCheck={false}
+                placeholder={t("在这里输入…")}
+                value={state.input}
+                onChange={(e) => update({ input: e.target.value })}
+              />
+            </div>
             <div className="editor-pane output">
               <div className="editor-label">
                 {t("结果")}

@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -111,4 +112,39 @@ func BoundCalculations(records []Calculation) []Calculation {
 		end++
 	}
 	return records[:end]
+}
+
+// UpsertCalculation records the sheet being edited: an existing id is updated
+// and moved to the top, an unknown or empty id starts a new record.
+func UpsertCalculation(records []Calculation, id, source string, results []string) ([]Calculation, string, bool, error) {
+	if err := ValidateCalculation(source, results); err != nil {
+		return records, id, false, err
+	}
+	index := -1
+	for i, r := range records {
+		if id != "" && r.ID == id {
+			index = i
+			break
+		}
+	}
+	if index < 0 && len(records) > 0 && records[0].Source == source && slices.Equal(records[0].Results, results) {
+		return records, records[0].ID, false, nil
+	}
+	if index >= 0 && records[index].Source == source && slices.Equal(records[index].Results, results) {
+		return records, id, false, nil
+	}
+	record, err := NewCalculation(source, results)
+	if err != nil {
+		return records, id, false, err
+	}
+	if index >= 0 {
+		record.ID = id
+	}
+	out := []Calculation{record}
+	for i, r := range records {
+		if i != index {
+			out = append(out, r)
+		}
+	}
+	return BoundCalculations(out), record.ID, true, nil
 }

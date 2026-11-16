@@ -62,7 +62,7 @@ func main() {
 		log.Print("window runtime ready")
 		// Internal idle reclamation reloads the page without revealing the window.
 		firstRuntime.Do(func() {
-			application.InvokeSync(func() { platform.ConfigureMaterial(service.window.NativeWindow()) })
+			application.InvokeSync(func() { platform.ConfigureMaterial(service.window.NativeWindow(), service.Snapshot().Settings.Theme) })
 			service.show()
 		})
 	})

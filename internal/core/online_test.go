@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -126,5 +127,26 @@ func TestMemoryFailureKindsRemainDistinct(t *testing.T) {
 	u, _ := url.Parse(raw)
 	if err != nil || u.Host != "translate.google.com" || u.Query().Get("text") != "你好 & + # ?" {
 		t.Fatal(raw, err)
+	}
+}
+func TestRatesParsingAndErrors(t *testing.T) {
+	now := time.UnixMilli(1700000000000)
+	rates, err := ParseRates([]byte(`{"amount":1,"base":"EUR","date":"2026-11-13","rates":{"USD":1.1,"CNY":7.37,"bad":3,"JPY":-1}}`), now)
+	if err != nil || rates.Rates["EUR"] != 1 || rates.Rates["USD"] != 1.1 || len(rates.Rates) != 3 || rates.FetchedAt != now.UnixMilli() {
+		t.Fatalf("%+v %v", rates, err)
+	}
+	for _, raw := range []string{`null`, `{}`, `{"base":"eur","date":"2026-11-13","rates":{"USD":1}}`, `{"base":"EUR","date":"x","rates":{"USD":1}}`, `{"base":"EUR","date":"2026-11-13","rates":{}}`} {
+		if _, err = ParseRates([]byte(raw), now); err == nil {
+			t.Fatal("bad rates accepted", raw)
+		}
+	}
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.URL.String() != RatesURL {
+			t.Fatal("unexpected url", r.URL)
+		}
+		return &http.Response{StatusCode: 503, Body: io.NopCloser(strings.NewReader(""))}, nil
+	})}
+	if _, err = FetchRates(context.Background(), client); err == nil {
+		t.Fatal("503 accepted")
 	}
 }

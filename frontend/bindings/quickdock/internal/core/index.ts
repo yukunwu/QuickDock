@@ -5,8 +5,10 @@ export type {
     AppEntry,
     Bookmark,
     Calculation,
+    Rates,
     Settings,
     ToolWindowState,
     Translation,
+    TranslationRecord,
     Usage
 } from "./models.js";
