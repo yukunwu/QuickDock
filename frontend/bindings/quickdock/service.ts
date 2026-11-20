@@ -171,6 +171,14 @@ export function RevealFile(path: string): $CancellablePromise<void> {
 }
 
 /**
+ * RunSystemCommand hides the Dock first so it is not on screen when the
+ * session locks or wakes.
+ */
+export function RunSystemCommand(id: string): $CancellablePromise<void> {
+    return $Call.ByID(3998835856, id);
+}
+
+/**
  * SaveQRCode only writes to a path explicitly selected in the native save dialog.
  * An empty selection is cancellation, not an error.
  */

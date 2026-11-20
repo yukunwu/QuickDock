@@ -279,6 +279,7 @@ export default function App() {
         await bridge.recordUsage(r.id);
       } else if (r.kind === "app") await bridge.launch(r.id);
       else if (r.kind === "file") await bridge.openFile(r.value!);
+      else if (r.kind === "command") await bridge.runSystemCommand(r.id);
       else if (r.kind === "bookmark")
         await bridge.openBookmark(r.id, r.value || "");
       else {

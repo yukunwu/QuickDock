@@ -308,3 +308,23 @@ it("f-prefixed queries search files unless f is a bookmark keyword", async () =>
   };
   expect(fileQuery("f report", disabled)).toBe("");
 });
+it("system commands match when typed but never appear as recents", () => {
+  const used = {
+    ...data,
+    usage: { lock: { count: 50, lastUsed: Date.now() } },
+  };
+  for (const q of ["锁屏", "suoping", "lock"])
+    expect(searchEntries(q, used)[0]).toMatchObject({
+      id: "lock",
+      kind: "command",
+    });
+  expect(searchEntries("sleep", used)[0].id).toBe("sleep");
+  expect(searchEntries("", used).some((r) => r.kind === "command")).toBe(false);
+  const disabled = {
+    ...used,
+    settings: { ...used.settings, disabledTools: ["system"] },
+  };
+  expect(
+    searchEntries("lock", disabled).some((r) => r.kind === "command"),
+  ).toBe(false);
+});

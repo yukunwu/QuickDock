@@ -256,17 +256,19 @@ export default function CompactLauncher({
                           ? t("工具")
                           : r.kind === "file"
                             ? t("文件")
-                            : r.kind === "bookmark"
-                              ? r.value !== undefined
-                                ? t("搜索")
-                                : t("网址")
-                              : r.kind === "websearch"
-                                ? t("搜索")
-                                : r.kind === "translation"
-                                  ? t("翻译")
-                                  : r.kind === "time"
-                                    ? t("时间")
-                                    : t("复制")}
+                            : r.kind === "command"
+                              ? t("命令")
+                              : r.kind === "bookmark"
+                                ? r.value !== undefined
+                                  ? t("搜索")
+                                  : t("网址")
+                                : r.kind === "websearch"
+                                  ? t("搜索")
+                                  : r.kind === "translation"
+                                    ? t("翻译")
+                                    : r.kind === "time"
+                                      ? t("时间")
+                                      : t("复制")}
                     </span>
                   )}
                   {searching && selected === i && <CornerDownLeft size={14} />}
@@ -312,10 +314,12 @@ export default function CompactLauncher({
               ? t("↵ 输入关键词")
               : translationOpen || visible[selected]?.kind === "translation"
                 ? t("↵ 翻译")
-                : visible[selected]?.kind === "calculation" ||
-                    visible[selected]?.kind === "time"
-                  ? t("↵ 复制")
-                  : t("↵ 打开")}
+                : visible[selected]?.kind === "command"
+                  ? t("↵ 执行")
+                  : visible[selected]?.kind === "calculation" ||
+                      visible[selected]?.kind === "time"
+                    ? t("↵ 复制")
+                    : t("↵ 打开")}
           </kbd>
           <kbd>{translationOpen ? t("esc 返回") : t("esc 隐藏")}</kbd>
         </span>

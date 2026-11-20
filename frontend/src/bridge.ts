@@ -595,3 +595,8 @@ export async function openFile(path: string) {
 export async function revealFile(path: string) {
   if (native) return (await backend()).RevealFile(path);
 }
+
+export async function runSystemCommand(id: string) {
+  if (!native) throw Error("浏览器预览不能执行系统命令");
+  return (await backend()).RunSystemCommand(id);
+}

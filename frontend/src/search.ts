@@ -4,6 +4,7 @@ import { pinyin } from "pinyin-pro";
 import { applicationAliases } from "./appAliases";
 import {
   tools,
+  systemCommands,
   fallbackIcons,
   genericAppIcon,
   type Snapshot,
@@ -184,6 +185,17 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
         icon: t.icon,
         color: t.color,
       })),
+    ...(data.settings.disabledTools.includes("system")
+      ? []
+      : systemCommands
+    ).map((c) => ({
+      id: c.id,
+      title: c.name,
+      subtitle: c.subtitle,
+      kind: "command" as const,
+      icon: c.icon,
+      color: "neutral",
+    })),
     ...(data.settings.disabledTools.includes("bookmarks")
       ? []
       : data.settings.bookmarks
@@ -209,10 +221,13 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
     const aliases =
       r.kind === "tool"
         ? tools.find((t) => t.id === r.id)?.keywords || ""
-        : r.kind === "bookmark"
-          ? data.settings.bookmarks.find((b) => b.id === r.id)?.alias || ""
-          : "";
-    if (!q) return 1;
+        : r.kind === "command"
+          ? systemCommands.find((c) => c.id === r.id)?.keywords || ""
+          : r.kind === "bookmark"
+            ? data.settings.bookmarks.find((b) => b.id === r.id)?.alias || ""
+            : "";
+    // Session commands never sit in the recents grid as the default Enter.
+    if (!q) return r.kind === "command" ? 0 : 1;
     const direct = nameScore(r.title, q, joined);
     const alternate =
       r.kind === "app"

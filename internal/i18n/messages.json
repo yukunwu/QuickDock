@@ -678,7 +678,19 @@
     "请重新搜索该文件": "Search for the file again",
     "文件搜索超时，请输入更具体的名称": "File search timed out; try a more specific name",
     "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "The Windows Search index isn't available; make sure the Windows Search service is running",
-    "未找到 plocate 或 locate，请先安装后再搜索文件": "plocate or locate isn't installed; install one to search files"
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "plocate or locate isn't installed; install one to search files",
+    "系统命令": "System commands",
+    "锁定屏幕与睡眠": "Lock screen and sleep",
+    "锁定屏幕": "Lock Screen",
+    "立即锁屏，需要密码解锁": "Lock now; unlocking needs your password",
+    "睡眠": "Sleep",
+    "让电脑立即进入睡眠": "Put the computer to sleep now",
+    "命令": "Command",
+    "↵ 执行": "↵ Run",
+    "浏览器预览不能执行系统命令": "The browser preview can't run system commands",
+    "未知系统命令": "Unknown system command",
+    "系统拒绝进入睡眠": "The system refused to sleep",
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "Couldn't lock the screen: the desktop supports neither loginctl nor xdg-screensaver"
   },
   "ja": {
     "偏好设置": "環境設定",
@@ -1359,7 +1371,19 @@
     "请重新搜索该文件": "ファイルをもう一度検索してください",
     "文件搜索超时，请输入更具体的名称": "ファイル検索がタイムアウトしました。より具体的な名前を入力してください",
     "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "Windows Search インデックスを利用できません。Windows Search サービスが有効か確認してください",
-    "未找到 plocate 或 locate，请先安装后再搜索文件": "plocate または locate が見つかりません。インストールしてから検索してください"
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "plocate または locate が見つかりません。インストールしてから検索してください",
+    "系统命令": "システムコマンド",
+    "锁定屏幕与睡眠": "画面ロックとスリープ",
+    "锁定屏幕": "画面をロック",
+    "立即锁屏，需要密码解锁": "すぐにロックします。解除にはパスワードが必要です",
+    "睡眠": "スリープ",
+    "让电脑立即进入睡眠": "コンピュータをすぐにスリープさせます",
+    "命令": "コマンド",
+    "↵ 执行": "↵ 実行",
+    "浏览器预览不能执行系统命令": "ブラウザプレビューではシステムコマンドを実行できません",
+    "未知系统命令": "不明なシステムコマンド",
+    "系统拒绝进入睡眠": "システムがスリープを拒否しました",
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "画面をロックできません：デスクトップが loginctl と xdg-screensaver に対応していません"
   },
   "zh-TW": {
     "偏好设置": "偏好設定",
@@ -2040,7 +2064,19 @@
     "请重新搜索该文件": "請重新搜尋該檔案",
     "文件搜索超时，请输入更具体的名称": "檔案搜尋逾時，請輸入更具體的名稱",
     "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "Windows 搜尋索引無法使用，請確認 Windows Search 服務已開啟",
-    "未找到 plocate 或 locate，请先安装后再搜索文件": "未找到 plocate 或 locate，請先安裝後再搜尋檔案"
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "未找到 plocate 或 locate，請先安裝後再搜尋檔案",
+    "系统命令": "系統指令",
+    "锁定屏幕与睡眠": "鎖定螢幕與睡眠",
+    "锁定屏幕": "鎖定螢幕",
+    "立即锁屏，需要密码解锁": "立即鎖定，需要密碼解鎖",
+    "睡眠": "睡眠",
+    "让电脑立即进入睡眠": "讓電腦立即進入睡眠",
+    "命令": "指令",
+    "↵ 执行": "↵ 執行",
+    "浏览器预览不能执行系统命令": "瀏覽器預覽無法執行系統指令",
+    "未知系统命令": "未知的系統指令",
+    "系统拒绝进入睡眠": "系統拒絕進入睡眠",
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "無法鎖定螢幕：桌面環境不支援 loginctl 或 xdg-screensaver"
   },
   "es": {
     "偏好设置": "Preferencias",
@@ -2721,6 +2757,18 @@
     "请重新搜索该文件": "Vuelve a buscar el archivo",
     "文件搜索超时，请输入更具体的名称": "La búsqueda tardó demasiado; usa un nombre más específico",
     "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "El índice de Windows Search no está disponible; comprueba que el servicio esté activo",
-    "未找到 plocate 或 locate，请先安装后再搜索文件": "No se encontró plocate ni locate; instala uno para buscar archivos"
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "No se encontró plocate ni locate; instala uno para buscar archivos",
+    "系统命令": "Comandos del sistema",
+    "锁定屏幕与睡眠": "Bloquear pantalla y suspender",
+    "锁定屏幕": "Bloquear pantalla",
+    "立即锁屏，需要密码解锁": "Bloquea ahora; necesitarás tu contraseña",
+    "睡眠": "Suspender",
+    "让电脑立即进入睡眠": "Suspende el equipo ahora",
+    "命令": "Comando",
+    "↵ 执行": "↵ Ejecutar",
+    "浏览器预览不能执行系统命令": "La vista previa del navegador no puede ejecutar comandos del sistema",
+    "未知系统命令": "Comando del sistema desconocido",
+    "系统拒绝进入睡眠": "El sistema rechazó la suspensión",
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "No se pudo bloquear: el escritorio no admite loginctl ni xdg-screensaver"
   }
 }

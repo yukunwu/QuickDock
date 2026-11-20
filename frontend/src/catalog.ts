@@ -28,6 +28,9 @@ import {
   GitCompare,
   CalendarClock,
   FileSearch,
+  Lock,
+  Moon,
+  Power,
   type LucideIcon,
 } from "lucide-react";
 export type ToolID =
@@ -393,7 +396,8 @@ export interface SearchResult {
     | "time"
     | "websearch"
     | "translation"
-    | "file";
+    | "file"
+    | "command";
   icon: LucideIcon;
   color: string;
   image?: string;
@@ -464,6 +468,17 @@ export const launcherActions = [
     color: "blue",
   },
   {
+    id: "system",
+    get name() {
+      return t("系统命令");
+    },
+    get subtitle() {
+      return t("锁定屏幕与睡眠");
+    },
+    icon: Power,
+    color: "neutral",
+  },
+  {
     id: "files",
     get name() {
       return t("文件搜索");
@@ -473,5 +488,31 @@ export const launcherActions = [
     },
     icon: FileSearch,
     color: "neutral",
+  },
+];
+
+// Session commands run immediately from the Dock; "system" disables them.
+export const systemCommands = [
+  {
+    id: "lock",
+    get name() {
+      return t("锁定屏幕");
+    },
+    get subtitle() {
+      return t("立即锁屏，需要密码解锁");
+    },
+    keywords: "lock screen lockscreen suoping sp suoding 锁屏 锁定",
+    icon: Lock,
+  },
+  {
+    id: "sleep",
+    get name() {
+      return t("睡眠");
+    },
+    get subtitle() {
+      return t("让电脑立即进入睡眠");
+    },
+    keywords: "sleep suspend shuimian sm daiji 睡眠 待机 休眠",
+    icon: Moon,
   },
 ];
