@@ -4,7 +4,7 @@
 
 支持简体中文、日本語、English、繁體中文、Español，默认跟随系统；可在偏好设置切换，保留工具输入。
 
-当前 `online` 分支包含二维码生成器、应用自动索引、Dock 重开清空搜索及应用拼音／英文搜索增强。这些更新尚未发布为新版本；公开稳定版仍为 v0.1.4。
+当前开发分支在 `online` 之上新增开机自启动、剪贴板历史、搜索关键词、文件搜索、结果次级操作、系统命令、配置导入导出，以及正则、JWT、颜色、进制、文本对比、Cron 六个开发工具。这些更新尚未发布为新版本；公开稳定版仍为 v0.1.4。
 
 ## 本地运行
 
@@ -21,17 +21,22 @@ open /Applications/QuickDock.app
 - macOS／Windows／Linux X11 唤起跟随鼠标所在屏幕；Wayland 由桌面系统安排窗口位置。
 - 空搜索展示最近使用的应用／工具，方向键选择，Enter 执行；支持中文、全拼、拼音首字母、英文名及英文缩写；例如微信可输入 `weixin`／`wx`／`wechat`，系统设置可输入 `xtsz`／`systemsettings`。支持空格、大小写与全角输入；网址仍支持别名。
 - 输入无应用匹配时，提供 Google 搜索与翻译快捷项；搜索使用默认浏览器，翻译保留在当前 Dock。设置可分别关闭这两个入口。
+- 搜索关键词：常用网址的 URL 含 `{query}`（或粘贴浏览器式 `%s`）即成为关键词，例如别名 `gh` + `https://github.com/search?q={query}`，在 Dock 输入 `gh rust` 直接搜索；只输入 `gh` 时 Enter／Tab 补全为 `gh `。设置中提供 GitHub、百度、Bing、Wikipedia 等常用搜索预设。
+- 文件搜索：输入 `f 名称`（或 `find`／`文件`）搜索主目录中的文件，Enter 用默认应用打开。macOS 使用 Spotlight，Windows 使用 Windows Search 索引，Linux 使用 plocate／locate；隐藏目录、`node_modules` 和 `~/Library` 等缓存不显示。若 `f` 已是某个网址关键词，则关键词优先。
+- 系统命令：输入“锁屏”／`lock` 或“睡眠”／`sleep` 立即锁定屏幕或睡眠（macOS 使用系统锁屏接口与 `pmset`，Windows 使用 `LockWorkStation`／`SetSuspendState`，Linux 使用 `loginctl`／`systemctl`）。命令只在输入时出现，不进入最近使用，可在设置中关闭。
+- 次级操作：`⌘↵`（Windows／Linux 为 `Ctrl+↵`）在访达／资源管理器中显示应用或文件，对网址则复制链接；底部提示当前所选项的操作。
 - 顶部设置按钮或 `⌘ ,` 进入设置；底部“全部工具”进入工具库。
 - 工具页占满窗口，不展示应用侧边栏和导航。Esc 回紧凑 Dock，Dock 再按 Esc 隐藏；独立工具 Esc 保存后关闭。`⌘ W` 隐藏；重新唤起清空搜索并回到紧凑 Dock，工具草稿仍在本次会话保留。
 - 启动器失焦隐藏；工具和设置失焦保留。菜单栏闪电图标 可打开、刷新索引或退出。
 - 每 3 秒轻量检查应用安装目录，新增、移除或更新入口后自动刷新索引；唤起时立即检查，5 分钟兜底同步，手动刷新仍可用。
 - 重复启动只唤起原实例。
+- 设置中可开启开机自动启动：macOS 通过 `SMAppService` 登记（需在“系统设置 › 登录项”允许时会提示并给出入口，应用须位于“应用程序”文件夹），Windows 写入当前用户 `Run` 项，Linux 写入 `~/.config/autostart/quickdock.desktop`。开机启动时保持隐藏，不弹出窗口。
 
 macOS `.app` 使用 ad-hoc 签名，不含 Developer ID 签名或公证。内置自动更新检查与手动下载安装，发布包校验 SHA256；详情见 [自动更新](docs/UPDATES.md)。无需前端开发服务器即可运行。
 
 ![原生启动面板](docs/screenshots/07-native-launcher.png)
 
-## 十三类内置工具
+## 二十类内置工具
 
 | 工具 | 已实现功能 |
 | --- | --- |
@@ -47,7 +52,14 @@ macOS `.app` 使用 ad-hoc 签名，不含 Developer ID 签名或公证。内置
 | 文本哈希 | MD5、SHA1、SHA256、SHA512 |
 | 单位换算 | 长度、质量、温度、面积、体积、速度、容量；十进制／二进制分别标明 |
 | 文本处理 | 大小写、逐行 trim、删空行、去重、自然排序、Unicode 字符／行／UTF-8 字节统计 |
-| 常用网址 | 名称、URL、别名增删改；搜索和默认浏览器打开；仅 HTTP(S) |
+| 常用网址 | 名称、URL、别名增删改；搜索和默认浏览器打开；仅 HTTP(S)；URL 含 `{query}` 时成为搜索关键词，提供常用搜索预设 |
+| 剪贴板历史 | 默认关闭，开启后记录复制的文本（最多200条，单条≤100KB），搜索、固定（最多50条）、单条删除、清空未固定项；Enter 写回剪贴板并隐藏 Dock 以便粘贴；跳过密码管理器标记为隐藏的内容 |
+| 正则测试 | JavaScript 正则，匹配高亮、编号与命名分组、`$1`／`$<name>` 替换预览；在后台 Worker 中匹配，3 秒超时防止灾难性回溯卡死 |
+| JWT 解码 | 头部／载荷格式化（保留大整数）、算法、iat／nbf／exp 时间与过期状态；只解码不验签，支持 Bearer 前缀，拒绝 JWE |
+| 颜色转换 | 任意 CSS 颜色（HEX、rgb()、hsl()、oklch()、颜色名），输出 HEX／RGB／HSL／OKLCH，取色器，白底／黑底 WCAG 对比度与等级 |
+| 进制转换 | 任意大小整数（BigInt），自动识别 0x／0o／0b，二、八、十、十六、三十六进制互转，分组显示、复制无空格 |
+| 文本对比 | Myers 逐行差异，双侧行号，可忽略空白差异，交换左右；最多20000行／2000处差异 |
+| Cron 表达式 | 5 段标准语法（名称、列表、范围、步长、@daily 等宏），字段解析，按本地或 UTC 预览接下来 10 次运行；日期与星期同时限定时按 Vixie 规则“满足其一” |
 
 没有外部插件 SDK、商店或 uTools 兼容层。新增内置工具通过 `frontend/src/catalog.ts` 的 `ToolDefinition` 注册，纯转换逻辑在 `frontend/src/tools/` 中。
 
@@ -61,6 +73,8 @@ Windows 读取开始菜单／桌面快捷方式和已注册应用，ShellExecute
 - 配置和使用记录：`~/Library/Application Support/QuickDock/settings.json`。
 - 应用缓存：同目录 `apps.json`。JSON 带版本，原子写入；损坏配置保留 `.corrupt-时间戳` 备份并恢复默认，未知未来版本禁止覆盖。
 - Dock内普通工具未保存的输入仅保留本次会话；独立窗口输入自动保存到`tool-windows/`；内部内存回收通过当前 WebView 会话历史临时传递草稿。
+- 剪贴板历史写入同目录 `clipboard.json`（仅在开启后），版本化原子 JSON，最多200条、约4MiB；macOS／Windows 轮询系统剪贴板变更计数，只在复制后读取，开启前已在剪贴板的内容不记录；Linux 每1.5秒通过 `wl-paste`（Wayland）或 `xclip`（X11）读取，并跳过 KeePassXC 等写入 `x-kde-passwordManagerHint` 的内容；未安装这两个工具时拒绝记录并在工具页说明。Windows 跳过 `ExcludeClipboardContentFromMonitorProcessing` 及 `CanIncludeInClipboardHistory` 为 0 的内容。容量按写入后的 JSON 大小计算，固定项也计入。
+- 配置导入导出：设置页“备份与迁移”导出语言、外观、快捷键、工具开关、常用网址和世界时钟；使用记录与各类历史不导出。导入前确认，快捷键在本机不可用时保留当前快捷键；剪贴板记录开关不随配置迁移，需在每台电脑上单独开启。
 - 明确保存的计算历史写入同目录 `calculations.json`，版本化原子JSON，最多100份／约8MiB。单稿纸最多200行／20000字符，重启后保留；浏览器预览历史独立保存在localStorage。
 - 翻译通过原生WebView直接展示Google翻译网页，网页内输入交给Google处理；不再调用公共翻译API。独立页保存当前原文／语言，Google网页可能要求网站验证。详见[网页翻译验证](docs/GOOGLE-WEB-VALIDATION.md)。
 - 浏览器预览明确使用示例应用，不能启动本机应用。原生版本通过 Wails 生成的类型绑定调用 Go。
@@ -81,7 +95,7 @@ pnpm --dir frontend install --frozen-lockfile
 
 ```sh
 pnpm --dir frontend dev                 # 浏览器预览，127.0.0.1:3415
-pnpm --dir frontend test                # 30 项逻辑测试
+pnpm --dir frontend test                # 58 项逻辑测试
 pnpm --dir frontend test:e2e            # Chrome 交互及搜索性能
 MACOSX_DEPLOYMENT_TARGET=13.0 \
 CGO_CFLAGS='-mmacosx-version-min=13.0' \
@@ -102,7 +116,7 @@ swift scripts/native-smoke.swift <QuickDock进程PID> "$PWD/bin/QuickDock.app/Co
 具体通过项、测量口径和未完成的人工验收见 [验证记录](docs/VALIDATION.md)。
 
 
-Dock翻译及计算历史的新增验收、截图和网络边界见 [新增功能验证](docs/ONLINE-NOTEBOOK-VALIDATION.md)。
+Dock翻译及计算历史的新增验收、截图和网络边界见 [新增功能验证](docs/ONLINE-NOTEBOOK-VALIDATION.md)。开机启动、剪贴板历史、文件搜索与六个开发工具的验证见 [启动器增强验证](docs/LAUNCHER-ESSENTIALS-VALIDATION.md)。
 
 ### 独立工具窗口
 

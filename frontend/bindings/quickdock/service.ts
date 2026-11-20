@@ -25,8 +25,27 @@ export function ClearCalculations(): $CancellablePromise<void> {
     return $Call.ByID(2878727492);
 }
 
+/**
+ * ClearClipboard removes everything except pinned entries.
+ */
+export function ClearClipboard(): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(3882026572);
+}
+
 export function ClearTranslations(): $CancellablePromise<void> {
     return $Call.ByID(1621221226);
+}
+
+export function ClipboardHistory(): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(1480826563);
+}
+
+/**
+ * ClipboardStatus explains why copies cannot be recorded on this desktop,
+ * or is empty when recording works.
+ */
+export function ClipboardStatus(): $CancellablePromise<string> {
+    return $Call.ByID(2529284451);
 }
 
 export function CloseToolWindow(id: string): $CancellablePromise<void> {
@@ -41,6 +60,10 @@ export function DeleteCalculation(id: string): $CancellablePromise<core$0.Calcul
     return $Call.ByID(3516954087, id);
 }
 
+export function DeleteClipboard(id: string): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(2591983540, id);
+}
+
 export function DeleteTranslation(id: string): $CancellablePromise<core$0.TranslationRecord[] | null> {
     return $Call.ByID(3703917925, id);
 }
@@ -53,12 +76,28 @@ export function ExchangeRates(refresh: boolean): $CancellablePromise<core$0.Rate
     return $Call.ByID(4082889811, refresh);
 }
 
+/**
+ * ExportConfig writes a backup built by the frontend (which owns the world
+ * clock list) to a path chosen in the save dialog; cancel returns false.
+ */
+export function ExportConfig(raw: string): $CancellablePromise<boolean> {
+    return $Call.ByID(3032844257, raw);
+}
+
 export function GoogleTranslationPage(windowID: string, text: string, source: string, target: string, action: string, rect: { [_ in string]?: number } | null): $CancellablePromise<void> {
     return $Call.ByID(2037417050, windowID, text, source, target, action, rect);
 }
 
 export function Hide(): $CancellablePromise<void> {
     return $Call.ByID(903678525);
+}
+
+/**
+ * ImportConfig reads and validates a backup; applying it is left to the
+ * frontend after the user confirms. A nil result means the dialog was cancelled.
+ */
+export function ImportConfig(): $CancellablePromise<core$0.ConfigExport | null> {
+    return $Call.ByID(3683199330);
 }
 
 export function InstallUpdate(): $CancellablePromise<void> {
@@ -73,12 +112,27 @@ export function Launch(id: string): $CancellablePromise<void> {
     return $Call.ByID(1184620374, id);
 }
 
-export function OpenBookmark(id: string): $CancellablePromise<void> {
-    return $Call.ByID(3635377621, id);
+export function LoginItem(): $CancellablePromise<core$0.LoginItem> {
+    return $Call.ByID(2067054041);
+}
+
+/**
+ * OpenBookmark opens a bookmark; query fills a search keyword's {query}.
+ */
+export function OpenBookmark(id: string, query: string): $CancellablePromise<void> {
+    return $Call.ByID(3635377621, id, query);
+}
+
+export function OpenFile(path: string): $CancellablePromise<void> {
+    return $Call.ByID(334650783, path);
 }
 
 export function OpenGoogleSearch(query: string): $CancellablePromise<void> {
     return $Call.ByID(1794324386, query);
+}
+
+export function OpenLoginItemSettings(): $CancellablePromise<void> {
+    return $Call.ByID(4179736288);
 }
 
 export function OpenToolWindow(id: string, session: string): $CancellablePromise<void> {
@@ -87,6 +141,10 @@ export function OpenToolWindow(id: string, session: string): $CancellablePromise
 
 export function OpenTranslationPage(text: string, source: string, target: string): $CancellablePromise<void> {
     return $Call.ByID(1312152035, text, source, target);
+}
+
+export function PinClipboard(id: string, pinned: boolean): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(1623600514, id, pinned);
 }
 
 /**
@@ -110,6 +168,25 @@ export function RestartAfterUpdate(): $CancellablePromise<void> {
 }
 
 /**
+ * RevealApp shows the application's bundle or shortcut in the file manager.
+ */
+export function RevealApp(id: string): $CancellablePromise<void> {
+    return $Call.ByID(1432362027, id);
+}
+
+export function RevealFile(path: string): $CancellablePromise<void> {
+    return $Call.ByID(1155574422, path);
+}
+
+/**
+ * RunSystemCommand hides the Dock first so it is not on screen when the
+ * session locks or wakes.
+ */
+export function RunSystemCommand(id: string): $CancellablePromise<void> {
+    return $Call.ByID(3998835856, id);
+}
+
+/**
  * SaveQRCode only writes to a path explicitly selected in the native save dialog.
  * An empty selection is cancellation, not an error.
  */
@@ -125,8 +202,24 @@ export function SaveToolWindow(id: string, session: string): $CancellablePromise
     return $Call.ByID(1926538382, id, session);
 }
 
+/**
+ * SearchFiles lists files in the home folder whose names contain query.
+ * Only paths from the latest search may be opened or revealed afterwards.
+ */
+export function SearchFiles(query: string): $CancellablePromise<core$0.FileHit[] | null> {
+    return $Call.ByID(1682328196, query);
+}
+
 export function SetEditing(editing: boolean): $CancellablePromise<void> {
     return $Call.ByID(519304937, editing);
+}
+
+/**
+ * SetLaunchAtLogin returns the state the OS reports afterwards; macOS may
+ * keep a registration pending until the user approves it in System Settings.
+ */
+export function SetLaunchAtLogin(enabled: boolean): $CancellablePromise<core$0.LoginItem> {
+    return $Call.ByID(2589224526, enabled);
 }
 
 /**
@@ -166,4 +259,12 @@ export function TranslationHistory(): $CancellablePromise<core$0.TranslationReco
 
 export function UpdateStatus(): $CancellablePromise<$models.UpdateInfo> {
     return $Call.ByID(2063323406);
+}
+
+/**
+ * UseClipboard puts an entry back on the clipboard and hides the Dock, so the
+ * user can paste it into the app they came from.
+ */
+export function UseClipboard(id: string): $CancellablePromise<void> {
+    return $Call.ByID(1730480898, id);
 }

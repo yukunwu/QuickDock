@@ -26,6 +26,8 @@ type Settings struct {
 	Shortcut      string     `json:"shortcut"`
 	DisabledTools []string   `json:"disabledTools"`
 	Bookmarks     []Bookmark `json:"bookmarks"`
+	// Recording copied text is opt-in; the history stays on this machine.
+	ClipboardHistory bool `json:"clipboardHistory,omitempty"`
 }
 type Usage struct {
 	Count    int   `json:"count"`
@@ -66,7 +68,7 @@ func Validate(s Settings) error {
 		return errors.New("快捷键不能为空")
 	}
 	valid := map[string]bool{}
-	for _, id := range []string{"calculator", "timestamp", "json", "base64", "url", "uuid", "hash", "units", "text", "bookmarks", "translate", "google", "qrcode", "currency"} {
+	for _, id := range []string{"calculator", "timestamp", "json", "base64", "url", "uuid", "hash", "units", "text", "bookmarks", "translate", "google", "qrcode", "currency", "clipboard", "regex", "jwt", "color", "base", "diff", "cron", "files", "system"} {
 		valid[id] = true
 	}
 	for _, id := range s.DisabledTools {
@@ -80,7 +82,7 @@ func Validate(s Settings) error {
 			return errors.New("网址名称或标识无效")
 		}
 		seen[b.ID] = true
-		if err := ValidateURL(b.URL); err != nil {
+		if err := validateBookmarkURL(b.URL); err != nil {
 			return err
 		}
 	}
@@ -92,6 +94,31 @@ func ValidateURL(raw string) error {
 		return errors.New("网址必须为不含登录凭据的 http:// 或 https:// 地址")
 	}
 	return nil
+}
+
+// QueryPlaceholder turns a bookmark into a search keyword: "gh rust" opens the
+// URL with "rust" substituted. It may appear in the path or query, never the host.
+const QueryPlaceholder = "{query}"
+
+func validateBookmarkURL(raw string) error {
+	if !strings.Contains(raw, QueryPlaceholder) {
+		return ValidateURL(raw)
+	}
+	u, err := url.Parse(strings.ReplaceAll(raw, QueryPlaceholder, "qdquery"))
+	if err == nil && strings.Contains(strings.ToLower(u.Host), "qdquery") {
+		return errors.New("搜索占位符 {query} 不能出现在域名中")
+	}
+	return ValidateURL(strings.ReplaceAll(raw, QueryPlaceholder, "q"))
+}
+
+// BookmarkTarget substitutes an escaped query; %20 rather than + keeps spaces
+// correct in both path segments and query strings.
+func BookmarkTarget(raw, query string) (string, error) {
+	if err := validateBookmarkURL(raw); err != nil {
+		return "", err
+	}
+	target := strings.ReplaceAll(raw, QueryPlaceholder, strings.ReplaceAll(url.QueryEscape(query), "+", "%20"))
+	return target, ValidateURL(target)
 }
 func AtomicJSON(path string, value any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {

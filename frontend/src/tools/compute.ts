@@ -1,5 +1,6 @@
 import type { ToolID } from "../catalog";
 import * as engine from "./engines";
+import { regexTest } from "./devtools";
 export type Draft = {
   input: string;
   mode: string;
@@ -16,6 +17,16 @@ export function compute(id: ToolID, state: Draft): Computed {
   try {
     let result = "";
     if (id === "uuid") result = state.generated;
+    // Regex runs in a worker; the UI parses the structured result.
+    else if (id === "regex")
+      result = JSON.stringify(
+        regexTest(
+          state.from,
+          state.mode,
+          state.input,
+          state.unit === "replace" ? state.to : undefined,
+        ),
+      );
     else if (state.input || id === "hash") {
       switch (id) {
         case "calculator":

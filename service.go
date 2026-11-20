@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"quickdock/internal/core"
 	"quickdock/internal/platform"
+	"strings"
 	"sync"
 	"time"
 )
@@ -55,6 +56,7 @@ type Service struct {
 	shortcutError      string
 	loadError          error
 	editing            bool
+	fileHits           map[string]bool
 	app                *application.App
 	window             *application.WebviewWindow
 	idleRelease        *time.Timer
@@ -215,17 +217,44 @@ func (s *Service) Launch(id string) error {
 	s.Hide()
 	return s.RecordUsage(id)
 }
-func (s *Service) OpenBookmark(id string) error {
+
+// RevealApp shows the application's bundle or shortcut in the file manager.
+func (s *Service) RevealApp(id string) error {
 	s.mu.Lock()
-	var target string
-	for _, b := range s.state.Settings.Bookmarks {
-		if b.ID == id {
-			target = b.URL
+	var path string
+	for _, a := range s.apps {
+		if a.ID == id {
+			path = a.Path
 			break
 		}
 	}
 	s.mu.Unlock()
-	if err := core.ValidateURL(target); err != nil {
+	if path == "" {
+		return errors.New("未找到应用，请刷新索引")
+	}
+	if _, err := os.Stat(path); err != nil && !strings.HasPrefix(path, `shell:AppsFolder\`) {
+		return errors.New("应用入口已移动或删除，请刷新索引")
+	}
+	if err := platform.RevealPath(path); err != nil {
+		return err
+	}
+	s.Hide()
+	return nil
+}
+
+// OpenBookmark opens a bookmark; query fills a search keyword's {query}.
+func (s *Service) OpenBookmark(id, query string) error {
+	s.mu.Lock()
+	var raw string
+	for _, b := range s.state.Settings.Bookmarks {
+		if b.ID == id {
+			raw = b.URL
+			break
+		}
+	}
+	s.mu.Unlock()
+	target, err := core.BookmarkTarget(raw, query)
+	if err != nil {
 		return err
 	}
 	if err := application.InvokeSyncWithError(func() error { return platform.Open(target, false) }); err != nil {

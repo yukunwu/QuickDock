@@ -1,0 +1,94 @@
+package main
+
+import (
+ "context"
+ "embed"
+ "encoding/json"
+ "fmt"
+ "os"
+ "os/exec"
+ "strings"
+ "time"
+ "github.com/wailsapp/wails/v3/pkg/application"
+ "github.com/wailsapp/wails/v3/pkg/events"
+ "quickdock/internal/platform"
+)
+//go:embed all:frontend/dist
+var assets embed.FS
+// Native checks for clipboard history, file search, login item status and
+// the worker-backed regex tool. Uses isolated settings and never opens files.
+func main() {
+ dir:=os.Getenv("QUICKDOCK_PROBE_DIR");if dir==""{panic("isolated data required")}
+ s:=newService(dir);s.state.Settings.Language="zh-CN"
+ app:=application.New(application.Options{Name:"QuickDock Essentials Probe",Services:[]application.Service{application.NewService(s)},ShouldQuit:s.prepareToolQuit,Assets:application.AssetOptions{Handler:application.BundledAssetFileServer(assets)},Mac:application.MacOptions{ActivationPolicy:application.ActivationPolicyAccessory}})
+ s.app=app;s.shortcuts=app.GlobalShortcut
+ s.window=app.Window.NewWithOptions(application.WebviewWindowOptions{Title:"QuickDock Essentials Probe",Name:"probe-essentials",URL:"/",Width:780,Height:340,Frameless:true,Mac:application.MacWindow{Backdrop:application.MacBackdropTransparent}})
+ ready:=make(chan struct{},1)
+ s.window.OnWindowEvent(events.Common.WindowRuntimeReady,func(_ *application.WindowEvent){select{case ready<-struct{}{}:default:}})
+ fail:=func(message string){fmt.Println("FAIL",message);os.Exit(1)}
+ wait:=func(label string,timeout time.Duration,check func()bool){until:=time.Now().Add(timeout);for !check(){if time.Now().After(until){fail("timeout "+label)};time.Sleep(25*time.Millisecond)}}
+ js:=func(condition,label string){q,_:=json.Marshal(label);s.window.ExecJS(fmt.Sprintf(`(()=>{const timer=setInterval(()=>{if(!(%s))return;clearInterval(timer);import('/wails/runtime.js').then(({Call})=>Call.ByID(4001834035,%s));},25)})()`,condition,q));wait(label,20*time.Second,func()bool{return s.Snapshot().Usage[label].Count>0})}
+ setValue:=func(selector,value string){q,_:=json.Marshal(value);sel,_:=json.Marshal(selector);s.window.ExecJS(fmt.Sprintf(`(()=>{const e=document.querySelector(%s);const proto=e instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(e,%s);e.dispatchEvent(new Event('input',{bubbles:true}));})()`,sel,q))}
+ copyText:=func(text string){cmd:=exec.Command("pbcopy");cmd.Stdin=strings.NewReader(text);if err:=cmd.Run();err!=nil{fail("pbcopy "+err.Error())}}
+ copyConcealed:=func(text string){q,_:=json.Marshal(text);script:=fmt.Sprintf(`ObjC.import('AppKit');const pb=$.NSPasteboard.generalPasteboard;pb.clearContents;pb.setStringForType(%s,'org.nspasteboard.ConcealedType');pb.setStringForType(%s,$.NSPasteboardTypeString);`,q,q);if out,err:=exec.Command("osascript","-l","JavaScript","-e",script).CombinedOutput();err!=nil{fail("osascript "+string(out))}}
+ history:=func()[]string{rows,err:=s.ClipboardHistory();if err!=nil{fail(err.Error())};texts:=[]string{};for _,r:=range rows{texts=append(texts,r.Text)};return texts}
+ app.Event.OnApplicationEvent(events.Common.ApplicationStarted,func(_ *application.ApplicationEvent){go func(){
+  <-ready
+  application.InvokeSync(func(){platform.ConfigureMaterial(s.window.NativeWindow(),"system")})
+  s.show()
+  js(`document.querySelector('input[aria-label="搜索应用和工具"]')`,"probe-dom-ready")
+
+  item:=platform.LoginItemStatus()
+  fmt.Printf("PASS login item status read without registering: %+v (unbundled probe)\n",item)
+
+  go s.watchClipboard()
+  marker:=fmt.Sprintf("QuickDock clipboard probe %d",os.Getpid())
+  copyText(marker+" before enabling")
+  time.Sleep(1600*time.Millisecond)
+  if len(history())!=0{fail("recorded while clipboard history is off")}
+  settings:=s.Snapshot().Settings;settings.ClipboardHistory=true
+  if _,err:=s.SaveSettings(settings);err!=nil{fail(err.Error())}
+  time.Sleep(1600*time.Millisecond)
+  if len(history())!=0{fail("recorded text copied before recording started")}
+  fmt.Println("PASS nothing recorded while off or from before enabling")
+  copyText(marker)
+  wait("clipboard recorded",5*time.Second,func()bool{h:=history();return len(h)==1&&h[0]==marker})
+  fmt.Println("PASS pbcopy text recorded within one poll")
+  copyConcealed(marker+" secret")
+  time.Sleep(1600*time.Millisecond)
+  if h:=history();len(h)!=1{fail(fmt.Sprintf("concealed content recorded: %q",h))}
+  fmt.Println("PASS org.nspasteboard.ConcealedType content skipped")
+  copyText("second "+marker);time.Sleep(1600*time.Millisecond);copyText(marker)
+  wait("dedupe",5*time.Second,func()bool{h:=history();return len(h)==2&&h[0]==marker})
+  fmt.Println("PASS repeated copy moves to the top without duplicating")
+  rows,_:=s.ClipboardHistory()
+  if err:=s.UseClipboard(rows[1].ID);err!=nil{fail(err.Error())}
+  if out,_:=exec.Command("pbpaste").Output();string(out)!="second "+marker{fail("UseClipboard did not restore text: "+string(out))}
+  s.show()
+  fmt.Println("PASS UseClipboard puts the entry back on the pasteboard")
+
+  start:=time.Now()
+  hits,err:=s.SearchFiles(context.Background(),"quickdock")
+  if err!=nil{fail(err.Error())}
+  if len(hits)==0{fail("no Spotlight hits for quickdock")}
+  for _,h:=range hits{if strings.Contains(h.Path,"/Library/")||strings.Contains(h.Path,"/."){fail("noisy hit "+h.Path)}}
+  fmt.Printf("PASS Spotlight file search: %d hits in %v, first %s\n",len(hits),time.Since(start).Round(time.Millisecond),hits[0].Path)
+  if err:=s.OpenFile("/etc/hosts");err==nil{fail("opened a path outside the last search")}
+  fmt.Println("PASS paths outside the latest search are refused")
+
+  setValue(`input[aria-label="搜索应用和工具"]`,"zzq")
+  setValue(`input[aria-label="搜索应用和工具"]`,"正则")
+  // Click inside the polling check: the list re-renders while results settle.
+  js(`(()=>{const o=document.querySelector('[role="option"]');if(document.querySelector('.regex-highlight'))return true;if(o?.textContent.includes('正则测试'))o.click();return false})()`,"probe-regex-opened")
+  js(`document.querySelector('.regex-highlight mark')`,"probe-regex-worker")
+  setValue(`input[aria-label="正则表达式"]`,"^(a+)+$")
+  setValue(`textarea[aria-label="测试文本"]`,"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!")
+  // JavaScriptCore gives up at its backtracking limit (no match); V8 in
+  // WebView2 hangs until the worker deadline. Either way the page must answer.
+  js(`/匹配超时|0 个匹配/.test(document.querySelector('.time-status')?.textContent||'')`,"probe-regex-bounded")
+  fmt.Println("PASS regex tool runs in a WebKit worker and stays responsive on catastrophic patterns")
+  app.Quit()
+ }()})
+ go func(){time.Sleep(90*time.Second);fail("probe total timeout")}()
+ if err:=app.Run();err!=nil{fail(strings.TrimSpace(err.Error()))}
+}

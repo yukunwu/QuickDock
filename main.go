@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"quickdock/internal/core"
 	"quickdock/internal/i18n"
 	"quickdock/internal/platform"
 	"strings"
@@ -25,9 +26,14 @@ func main() {
 		log.Fatal(err)
 	}
 	service := newService(filepath.Join(dir, "QuickDock"))
+	platform.WatchLoginLaunch()
 	app := application.New(application.Options{Name: "QuickDock", Description: "随唤随用的本地快捷工具", ShouldQuit: service.prepareToolQuit, OnShutdown: service.stopAppIndexMonitor, Services: []application.Service{application.NewService(service)}, Assets: application.AssetOptions{Handler: application.BundledAssetFileServer(assets)}, Mac: application.MacOptions{ActivationPolicy: application.ActivationPolicyAccessory}, SingleInstance: &application.SingleInstanceOptions{UniqueID: "com.quickdock.desktop", OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
 		if service.window != nil {
 			for _, arg := range data.Args {
+				// A login item racing an already running instance stays out of the way.
+				if arg == core.AutostartFlag {
+					return
+				}
 				if arg == "--toggle" {
 					service.toggle()
 					return
@@ -63,6 +69,12 @@ func main() {
 		// Internal idle reclamation reloads the page without revealing the window.
 		firstRuntime.Do(func() {
 			application.InvokeSync(func() { platform.ConfigureMaterial(service.window.NativeWindow(), service.Snapshot().Settings.Theme) })
+			// Starting with the session should not pop the launcher up.
+			if platform.LaunchedAtLogin(os.Args[1:]) {
+				log.Print("launched at login; staying hidden")
+				service.Hide()
+				return
+			}
 			service.show()
 		})
 	})
@@ -101,6 +113,7 @@ func main() {
 			}
 			log.Printf("shortcuts: %v", app.GlobalShortcut.GetAll())
 			service.startAppIndexMonitor()
+			go service.watchClipboard()
 		}()
 	})
 	if err := app.Run(); err != nil {

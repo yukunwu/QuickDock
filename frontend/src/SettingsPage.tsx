@@ -2,7 +2,17 @@ import { errorText, t, t as translate, useLocale } from "./i18n";
 import ShortcutPicker from "./ShortcutPicker";
 import { languages } from "./i18n";
 import { Suspense, lazy, useState, useEffect } from "react";
-import { Monitor, Sun, Moon, RefreshCw, Zap } from "lucide-react";
+import * as bridge from "./bridge";
+import {
+  Monitor,
+  Sun,
+  Moon,
+  RefreshCw,
+  Zap,
+  Download,
+  Upload,
+} from "lucide-react";
+import { loadWorldClocks, storeWorldClocks } from "./tools/worldClocks";
 import {
   tools,
   launcherActions,
@@ -107,6 +117,7 @@ export default function SettingsPage({
             save={(shortcut) => save({ ...data.settings, shortcut })}
           />
         </div>
+        <LoginItemRow notify={notify} />
         <div className="setting-row">
           <div>
             <strong>{t("应用索引")}</strong>
@@ -169,6 +180,7 @@ export default function SettingsPage({
           />
         </Suspense>
       </section>
+      <BackupSection data={data} save={save} notify={notify} />
       <Suspense fallback={<p>{t("正在加载更新…")}</p>}>
         <UpdatePanel />
       </Suspense>
@@ -183,5 +195,205 @@ export default function SettingsPage({
         <span>{t("工具数据保存在本机")}</span>
       </div>
     </div>
+  );
+}
+
+function LoginItemRow({ notify }: { notify: (s: string) => void }) {
+  useLocale();
+  const [item, setItem] = useState<bridge.LoginItem | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const load = () =>
+      void bridge
+        .loginItem()
+        .then(setItem)
+        .catch(() => setItem(null));
+    load();
+    // Approval happens in System Settings; re-read when the user comes back.
+    window.addEventListener("focus", load);
+    return () => window.removeEventListener("focus", load);
+  }, []);
+  const on = !!item && (item.enabled || item.needsApproval);
+  return (
+    <div className="setting-row">
+      <div>
+        <strong>{t("开机自动启动")}</strong>
+        <p>
+          {!item?.supported
+            ? bridge.native
+              ? t(
+                  "当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹",
+                )
+              : t("请在桌面版中设置开机启动")
+            : item.needsApproval
+              ? t("需要在系统设置的“登录项”中允许 QuickDock")
+              : t("登录后在后台启动，不弹出窗口")}
+        </p>
+        {item?.needsApproval && (
+          <button
+            className="secondary setting-inline-action"
+            onClick={() => void bridge.openLoginItemSettings()}
+          >
+            {t("打开登录项设置")}
+          </button>
+        )}
+      </div>
+      <button
+        role="switch"
+        aria-label={t("开机自动启动")}
+        aria-checked={on}
+        disabled={busy || !item?.supported}
+        className={`switch ${on ? "on" : ""}`}
+        onClick={() => {
+          setBusy(true);
+          bridge
+            .setLaunchAtLogin(!on)
+            .then((next) => {
+              setItem(next);
+              notify(
+                next.needsApproval
+                  ? t("需要在系统设置的“登录项”中允许 QuickDock")
+                  : next.enabled
+                    ? t("已开启开机自动启动")
+                    : t("已关闭开机自动启动"),
+              );
+            })
+            .catch((e) => notify(errorText(e)))
+            .finally(() => setBusy(false));
+        }}
+      >
+        <span />
+      </button>
+    </div>
+  );
+}
+
+// Backups carry preferences only: usage counts and histories stay here.
+function BackupSection({
+  data,
+  save,
+  notify,
+}: {
+  data: Snapshot;
+  save: (s: Settings) => Promise<void>;
+  notify: (s: string) => void;
+}) {
+  useLocale();
+  const [pending, setPending] = useState<bridge.ConfigExport | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    try {
+      await action();
+    } catch (e) {
+      notify(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const apply = (config: bridge.ConfigExport) =>
+    run(async () => {
+      // Recording the clipboard stays an opt-in on each machine.
+      const settings = {
+        ...config.settings,
+        version: data.settings.version,
+        clipboardHistory: data.settings.clipboardHistory,
+      };
+      let shortcutKept = false;
+      try {
+        await save(settings);
+      } catch (e) {
+        // A shortcut from another platform or already taken must not block
+        // the rest of the backup; any other failure is reported as is.
+        if (
+          settings.shortcut === data.settings.shortcut ||
+          !(await bridge.snapshot()).shortcutError
+        )
+          throw e;
+        await save({ ...settings, shortcut: data.settings.shortcut });
+        shortcutKept = true;
+      }
+      storeWorldClocks(config.worldClocks);
+      setPending(null);
+      notify(
+        shortcutKept
+          ? t("配置已导入，快捷键无法使用，已保留当前快捷键")
+          : t("配置已导入"),
+      );
+    });
+  return (
+    <section className="settings-section">
+      <h3>{t("备份与迁移")}</h3>
+      <p className="muted">
+        {t(
+          "导出语言、外观、快捷键、工具开关、常用网址和世界时钟；使用记录与各类历史不会导出。",
+        )}
+      </p>
+      <div className="setting-row">
+        <div>
+          <strong>{t("配置文件")}</strong>
+          <p>{t("可在另一台电脑上导入")}</p>
+        </div>
+        <span className="backup-actions">
+          <button
+            className="secondary"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                const saved = await bridge.exportConfig({
+                  version: 1,
+                  app: "QuickDock",
+                  exportedAt: Date.now(),
+                  settings: { ...data.settings, clipboardHistory: undefined },
+                  worldClocks: loadWorldClocks(),
+                });
+                if (saved) notify(t("配置已导出"));
+              })
+            }
+          >
+            <Download size={14} />
+            {t("导出配置")}
+          </button>
+          <button
+            className="secondary"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => setPending(await bridge.importConfig()))
+            }
+          >
+            <Upload size={14} />
+            {t("导入配置")}
+          </button>
+        </span>
+      </div>
+      {pending && (
+        <div className="setting-row backup-confirm" role="alert">
+          <div>
+            <strong>{t("确认导入？")}</strong>
+            <p>
+              {t(
+                "将覆盖当前设置，并替换为 {bookmarks} 个常用网址、{clocks} 个世界时钟。",
+                {
+                  bookmarks: pending.settings.bookmarks.length,
+                  clocks: pending.worldClocks.length,
+                },
+              )}
+            </p>
+          </div>
+          <span className="backup-actions">
+            <button className="secondary" onClick={() => setPending(null)}>
+              {t("取消")}
+            </button>
+            <button
+              className="primary"
+              disabled={busy}
+              onClick={() => void apply(pending)}
+            >
+              {t("确认导入")}
+            </button>
+          </span>
+        </div>
+      )}
+    </section>
   );
 }

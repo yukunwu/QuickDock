@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil, Trash2, Globe } from "lucide-react";
 import type { Bookmark, Settings } from "./catalog";
 import * as bridge from "./bridge";
+import { normalizeBookmarkURL, searchPresets } from "./tools/bookmarks";
 const blank = { id: "", name: "", url: "", alias: "" };
 let draft: Bookmark = { ...blank };
 export default function BookmarkEditor({
@@ -20,6 +21,9 @@ export default function BookmarkEditor({
     () => (getBookmarkDraft() as Bookmark | undefined) || draft,
   );
   const [busy, setBusy] = useState(false);
+  const presets = searchPresets.filter(
+    (p) => !settings.bookmarks.some((b) => b.url === p.url),
+  );
   const update = (next: Bookmark) => {
     draft = next;
     setBookmarkDraft(next);
@@ -44,17 +48,13 @@ export default function BookmarkEditor({
         onSubmit={async (e) => {
           e.preventDefault();
           try {
-            const url = new URL(form.url);
-            if (url.username || url.password)
-              throw new Error(t("网址不能包含登录凭据"));
-            if (!["https:", "http:"].includes(url.protocol))
-              throw new Error(t("网址只支持 http:// 或 https://"));
-            if (!form.name.trim()) throw new Error(t("请输入网址名称"));
+            const url = normalizeBookmarkURL(form.url);
+            if (!form.name.trim()) throw new Error("请输入网址名称");
             const item = {
               ...form,
               id: form.id || crypto.randomUUID(),
               name: form.name.trim(),
-              url: url.href,
+              url,
             };
             if (
               await persist(
@@ -102,6 +102,28 @@ export default function BookmarkEditor({
           </button>
         )}
       </form>
+      <p className="bookmark-hint">
+        {t(
+          "网址中的 {query} 会替换为搜索词：设置别名 gh 后，在 Dock 输入「gh 关键词」即可直接搜索。",
+        )}
+      </p>
+      {presets.length > 0 && (
+        <div className="bookmark-presets" aria-label={t("常用搜索")}>
+          <span>{t("常用搜索")}</span>
+          {presets.map((p) => (
+            <button
+              key={p.url}
+              type="button"
+              className="secondary"
+              disabled={busy}
+              title={p.url}
+              onClick={() => update({ ...p, name: t(p.name), id: "" })}
+            >
+              {t(p.name)} · {p.alias}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="bookmark-list">
         {settings.bookmarks.map((b) => (
           <div className="bookmark-row" key={b.id}>

@@ -7,7 +7,6 @@ import {
   allZones,
   commonZones,
   dayShift,
-  defaultZones,
   formatZoned,
   isoWithOffset,
   localZone,
@@ -20,18 +19,7 @@ import {
   zonedParts,
 } from "./tools/time";
 import ToolHeader, { copyText } from "./ToolHeader";
-// The zone list is a preference, not tool input, so it outlives the session.
-const zonesKey = "quickdock-time-zones";
-function loadZones() {
-  try {
-    const list = JSON.parse(localStorage.getItem(zonesKey) || "null");
-    if (Array.isArray(list) && list.every((z) => typeof z === "string"))
-      return list.filter(validZone).slice(0, 24);
-  } catch {
-    // Fall through to defaults.
-  }
-  return defaultZones;
-}
+import { loadWorldClocks, storeWorldClocks } from "./tools/worldClocks";
 const zoneNames = new Map(commonZones);
 function zoneName(zone: string) {
   if (zone === "local") return t("本地时区");
@@ -76,10 +64,10 @@ export default function TimeWorkspace({
       drafts.set("timestamp", next);
       return next;
     });
-  const [zones, setZones] = useState(loadZones);
+  const [zones, setZones] = useState(loadWorldClocks);
   const saveZones = (next: string[]) => {
     setZones(next);
-    localStorage.setItem(zonesKey, JSON.stringify(next));
+    storeWorldClocks(next);
   };
   const [now, setNow] = useState(Date.now());
   const live = !state.input.trim();

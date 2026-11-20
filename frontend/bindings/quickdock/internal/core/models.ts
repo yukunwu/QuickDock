@@ -24,6 +24,45 @@ export interface Calculation {
     "results": string[] | null;
 }
 
+/**
+ * ClipboardEntry is one copied text. Pinned entries are kept when the history
+ * is trimmed and listed first.
+ */
+export interface ClipboardEntry {
+    "id": string;
+    "createdAt": number;
+    "text": string;
+    "pinned"?: boolean;
+}
+
+/**
+ * ConfigExport is a portable backup of preferences: settings, bookmarks and
+ * world clocks. Usage counts and histories stay on the machine.
+ */
+export interface ConfigExport {
+    "version": number;
+    "app": string;
+    "exportedAt": number;
+    "settings": Settings;
+    "worldClocks": string[] | null;
+}
+
+export interface FileHit {
+    "path": string;
+    "name": string;
+    "folder": string;
+}
+
+/**
+ * LoginItem reports the OS login-item state; the OS is the source of truth,
+ * so it is never stored in settings.json.
+ */
+export interface LoginItem {
+    "supported": boolean;
+    "enabled": boolean;
+    "needsApproval": boolean;
+}
+
 export interface Rates {
     "base": string;
     "date": string;
@@ -40,6 +79,11 @@ export interface Settings {
     "shortcut": string;
     "disabledTools": string[] | null;
     "bookmarks": Bookmark[] | null;
+
+    /**
+     * Recording copied text is opt-in; the history stays on this machine.
+     */
+    "clipboardHistory"?: boolean;
 }
 
 export interface ToolWindowState {

@@ -4,6 +4,7 @@ import { pinyin } from "pinyin-pro";
 import { applicationAliases } from "./appAliases";
 import {
   tools,
+  systemCommands,
   fallbackIcons,
   genericAppIcon,
   type Snapshot,
@@ -16,7 +17,14 @@ import {
   Languages,
   Clock3,
   NotebookPen,
+  FileText,
 } from "lucide-react";
+import type { FileHit } from "./bridge";
+import {
+  bookmarkKeywords,
+  bookmarkTarget,
+  isSearchKeyword,
+} from "./tools/bookmarks";
 import {
   formatZoned,
   localZone,
@@ -177,17 +185,34 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
         icon: t.icon,
         color: t.color,
       })),
+    ...(data.settings.disabledTools.includes("system")
+      ? []
+      : systemCommands
+    ).map((c) => ({
+      id: c.id,
+      title: c.name,
+      subtitle: c.subtitle,
+      kind: "command" as const,
+      icon: c.icon,
+      color: "neutral",
+    })),
     ...(data.settings.disabledTools.includes("bookmarks")
       ? []
       : data.settings.bookmarks
-    ).map((b) => ({
-      id: b.id,
-      title: b.name,
-      subtitle: b.url,
-      kind: "bookmark" as const,
-      icon: Globe,
-      color: "purple",
-    })),
+    ).map((b) => {
+      const keyword = isSearchKeyword(b) ? bookmarkKeywords(b)[0] : "";
+      return {
+        id: b.id,
+        title: b.name,
+        subtitle: keyword
+          ? t("输入「{keyword} 关键词」直接搜索", { keyword })
+          : b.url,
+        kind: "bookmark" as const,
+        icon: Globe,
+        color: "purple",
+        complete: keyword ? keyword + " " : undefined,
+      };
+    }),
   ];
   const appAliases = new Map(
     apps.map((app) => [app.id, applicationAliases(app)]),
@@ -196,10 +221,13 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
     const aliases =
       r.kind === "tool"
         ? tools.find((t) => t.id === r.id)?.keywords || ""
-        : r.kind === "bookmark"
-          ? data.settings.bookmarks.find((b) => b.id === r.id)?.alias || ""
-          : "";
-    if (!q) return 1;
+        : r.kind === "command"
+          ? systemCommands.find((c) => c.id === r.id)?.keywords || ""
+          : r.kind === "bookmark"
+            ? data.settings.bookmarks.find((b) => b.id === r.id)?.alias || ""
+            : "";
+    // Session commands never sit in the recents grid as the default Enter.
+    if (!q) return r.kind === "command" ? 0 : 1;
     const direct = nameScore(r.title, q, joined);
     const alternate =
       r.kind === "app"
@@ -308,7 +336,31 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
       /* Invalid dates fall back to normal search. */
     }
   }
+  // "gh rust": the first word names a search keyword, the rest is the query.
+  const keywordQuery = /^(\S+)\s+(\S[\s\S]*)$/.exec(query.trim());
+  const keywordSearch: SearchResult[] =
+    keywordQuery && enabled("bookmarks")
+      ? data.settings.bookmarks
+          .filter(
+            (b) =>
+              isSearchKeyword(b) &&
+              bookmarkKeywords(b).includes(fold(keywordQuery[1])),
+          )
+          .map((b) => ({
+            id: b.id,
+            title: t("在 {name} 中搜索「{query}」", {
+              name: b.name,
+              query: keywordQuery[2],
+            }),
+            subtitle: bookmarkTarget(b.url, keywordQuery[2]),
+            kind: "bookmark" as const,
+            icon: Search,
+            color: "purple",
+            value: keywordQuery[2],
+          }))
+      : [];
   const matched: SearchResult[] = [
+    ...keywordSearch,
     ...time,
     ...calculation,
     ...ranked.map((e) => e.r),
@@ -343,7 +395,33 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
       else online.push(translation);
     }
   }
-  if (intent === "translation") return [...online, ...matched];
+  if (intent === "translation" && !keywordSearch.length)
+    return [...online, ...matched];
   matched.push(...online);
   return matched;
+}
+
+// "f report" searches files in the home folder, unless "f" is a bookmark
+// search keyword, which takes precedence.
+export function fileQuery(query: string, data: Snapshot) {
+  const match = /^(?:f|find|文件)\s+(\S[\s\S]*)$/i.exec(query.trim());
+  if (!match || data.settings.disabledTools.includes("files")) return "";
+  const head = fold(query.trim().split(/\s+/)[0]);
+  const keyword =
+    !data.settings.disabledTools.includes("bookmarks") &&
+    data.settings.bookmarks.some(
+      (b) => isSearchKeyword(b) && bookmarkKeywords(b).includes(head),
+    );
+  return keyword ? "" : match[1].trim();
+}
+export function fileResults(hits: FileHit[]): SearchResult[] {
+  return hits.map((hit) => ({
+    id: hit.path,
+    title: hit.name,
+    subtitle: hit.folder,
+    kind: "file" as const,
+    icon: FileText,
+    color: "neutral",
+    value: hit.path,
+  }));
 }

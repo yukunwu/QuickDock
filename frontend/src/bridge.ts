@@ -1,4 +1,5 @@
 import { parseRates, ratesURL, type Rates } from "./tools/currency";
+import { bookmarkTarget } from "./tools/bookmarks";
 import {
   defaults,
   previewApps,
@@ -46,11 +47,15 @@ export async function launch(id: string): Promise<void> {
   if (native) return (await backend()).Launch(id);
   throw new Error("浏览器预览不能启动本机应用，请在 QuickDock 桌面版中使用。");
 }
-export async function openBookmark(id: string): Promise<void> {
-  if (native) return (await backend()).OpenBookmark(id);
+export async function revealApp(id: string): Promise<void> {
+  if (native) return (await backend()).RevealApp(id);
+  throw new Error("浏览器预览不能启动本机应用，请在 QuickDock 桌面版中使用。");
+}
+export async function openBookmark(id: string, query = ""): Promise<void> {
+  if (native) return (await backend()).OpenBookmark(id, query);
   const b = demoSettings.bookmarks.find((b) => b.id === id);
   if (!b) throw new Error("网址不存在");
-  const url = new URL(b.url);
+  const url = new URL(bookmarkTarget(b.url, query));
   if (!["https:", "http:"].includes(url.protocol))
     throw new Error("不支持的网址协议");
   window.open(url.href, "_blank", "noopener,noreferrer");
@@ -65,6 +70,7 @@ export async function setEditing(editing: boolean) {
 export async function copy(text: string) {
   if (native) return (await backend()).Copy(text);
   await navigator.clipboard.writeText(text);
+  previewRecordClipboard(text);
 }
 export async function recordUsage(id: string) {
   if (native) return (await backend()).RecordUsage(id);
@@ -441,4 +447,160 @@ export async function saveQRCode(
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   return true;
+}
+
+export type LoginItem = {
+  supported: boolean;
+  enabled: boolean;
+  needsApproval: boolean;
+};
+export async function loginItem(): Promise<LoginItem> {
+  if (native) return (await backend()).LoginItem() as Promise<LoginItem>;
+  return { supported: false, enabled: false, needsApproval: false };
+}
+export async function setLaunchAtLogin(enabled: boolean): Promise<LoginItem> {
+  if (!native) throw Error("请在桌面版中设置开机启动");
+  return (await backend()).SetLaunchAtLogin(enabled) as Promise<LoginItem>;
+}
+export async function openLoginItemSettings() {
+  if (native) await (await backend()).OpenLoginItemSettings();
+}
+
+export type ClipboardEntry = {
+  id: string;
+  createdAt: number;
+  text: string;
+  pinned?: boolean;
+};
+// The browser preview cannot watch the system clipboard; it keeps what
+// QuickDock itself copies so the history page can be exercised.
+const clipboardKey = "quickdock-preview-clipboard";
+function previewClipboard(): ClipboardEntry[] {
+  try {
+    const state = JSON.parse(localStorage.getItem(clipboardKey) || "null");
+    return state?.version === 1 && Array.isArray(state.records)
+      ? state.records
+      : [];
+  } catch {
+    return [];
+  }
+}
+function storePreviewClipboard(records: ClipboardEntry[]) {
+  localStorage.setItem(
+    clipboardKey,
+    JSON.stringify({ version: 1, records: records.slice(0, 200) }),
+  );
+  window.dispatchEvent(new Event("quickdock-clipboard-history"));
+  return records;
+}
+export function previewRecordClipboard(text: string) {
+  if (native || !demoSettings.clipboardHistory || !text.trim()) return;
+  const old = previewClipboard();
+  const same = old.find((r) => r.text === text);
+  storePreviewClipboard([
+    {
+      id: same?.id || crypto.randomUUID(),
+      createdAt: Date.now(),
+      text,
+      pinned: same?.pinned,
+    },
+    ...old.filter((r) => r.text !== text),
+  ]);
+}
+// Non-empty when this desktop cannot record copies safely (Linux tools).
+export async function clipboardStatus(): Promise<string> {
+  return native ? (await backend()).ClipboardStatus() : "";
+}
+export async function clipboardHistory(): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).ClipboardHistory()) || [];
+  return previewClipboard();
+}
+export async function deleteClipboard(id: string): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).DeleteClipboard(id)) || [];
+  return storePreviewClipboard(previewClipboard().filter((r) => r.id !== id));
+}
+export async function pinClipboard(
+  id: string,
+  pinned: boolean,
+): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).PinClipboard(id, pinned)) || [];
+  return storePreviewClipboard(
+    previewClipboard().map((r) => (r.id === id ? { ...r, pinned } : r)),
+  );
+}
+export async function clearClipboard(): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).ClearClipboard()) || [];
+  return storePreviewClipboard(previewClipboard().filter((r) => r.pinned));
+}
+export async function restoreClipboard(entry: ClipboardEntry) {
+  if (native) return (await backend()).UseClipboard(entry.id);
+  await copy(entry.text);
+}
+
+export type ConfigExport = {
+  version: 1;
+  app: "QuickDock";
+  exportedAt: number;
+  settings: Settings;
+  worldClocks: string[];
+};
+export async function exportConfig(config: ConfigExport): Promise<boolean> {
+  const raw = JSON.stringify(config, null, 2);
+  if (native) return (await backend()).ExportConfig(raw);
+  const url = URL.createObjectURL(
+    new Blob([raw], { type: "application/json" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "QuickDock.json";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}
+// Returns null when the user cancels the file dialog.
+export async function importConfig(): Promise<ConfigExport | null> {
+  if (native)
+    return (await (await backend()).ImportConfig()) as ConfigExport | null;
+  const file = await new Promise<File | null>((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = () => resolve(input.files?.[0] || null);
+    input.oncancel = () => resolve(null);
+    input.click();
+  });
+  if (!file) return null;
+  const config = JSON.parse(await file.text());
+  if (config?.app !== "QuickDock") throw Error("不是 QuickDock 配置文件");
+  if (config.version !== 1) throw Error("配置文件版本不受支持");
+  return config;
+}
+
+export type FileHit = { path: string; name: string; folder: string };
+export async function searchFiles(
+  query: string,
+  signal: AbortSignal,
+): Promise<FileHit[]> {
+  if (!native) throw Error("浏览器预览不能搜索本机文件");
+  const api = await backend();
+  signal.throwIfAborted();
+  const call = api.SearchFiles(query);
+  const cancel = () => void call.cancel().catch(() => {});
+  signal.addEventListener("abort", cancel, { once: true });
+  try {
+    return (await call) || [];
+  } finally {
+    signal.removeEventListener("abort", cancel);
+  }
+}
+export async function openFile(path: string) {
+  if (native) return (await backend()).OpenFile(path);
+}
+export async function revealFile(path: string) {
+  if (native) return (await backend()).RevealFile(path);
+}
+
+export async function runSystemCommand(id: string) {
+  if (!native) throw Error("浏览器预览不能执行系统命令");
+  return (await backend()).RunSystemCommand(id);
 }

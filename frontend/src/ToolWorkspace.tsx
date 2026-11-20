@@ -12,6 +12,13 @@ import CalculatorNotebook from "./CalculatorNotebook";
 import UUIDWorkspace from "./UUIDWorkspace";
 import TimeWorkspace from "./TimeWorkspace";
 import CurrencyWorkspace from "./CurrencyWorkspace";
+import ClipboardWorkspace from "./ClipboardWorkspace";
+import RegexWorkspace from "./RegexWorkspace";
+import JWTWorkspace from "./JWTWorkspace";
+import ColorWorkspace from "./ColorWorkspace";
+import BaseWorkspace from "./BaseWorkspace";
+import DiffWorkspace from "./DiffWorkspace";
+import CronWorkspace from "./CronWorkspace";
 import type { Draft } from "./tools/compute";
 import { PREVIEW_LIMIT, useComputed } from "./tools/useComputed";
 import { drafts } from "./toolSession";
@@ -53,6 +60,27 @@ export default function ToolWorkspace(props: {
     return <UUIDWorkspace back={props.back} notify={props.notify} />;
   if (props.id === "timestamp")
     return <TimeWorkspace back={props.back} notify={props.notify} />;
+  const dedicated = {
+    regex: RegexWorkspace,
+    jwt: JWTWorkspace,
+    color: ColorWorkspace,
+    base: BaseWorkspace,
+    diff: DiffWorkspace,
+    cron: CronWorkspace,
+  }[props.id as string];
+  if (dedicated) {
+    const Dedicated = dedicated;
+    return <Dedicated back={props.back} notify={props.notify} />;
+  }
+  if (props.id === "clipboard")
+    return (
+      <ClipboardWorkspace
+        back={props.back}
+        notify={props.notify}
+        settings={props.settings}
+        saveSettings={props.saveSettings}
+      />
+    );
   if (props.id === "currency")
     return <CurrencyWorkspace back={props.back} notify={props.notify} />;
   return <Workspace key={props.id} {...props} />;
