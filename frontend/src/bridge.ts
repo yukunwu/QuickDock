@@ -532,3 +532,42 @@ export async function restoreClipboard(entry: ClipboardEntry) {
   if (native) return (await backend()).UseClipboard(entry.id);
   await copy(entry.text);
 }
+
+export type ConfigExport = {
+  version: 1;
+  app: "QuickDock";
+  exportedAt: number;
+  settings: Settings;
+  worldClocks: string[];
+};
+export async function exportConfig(config: ConfigExport): Promise<boolean> {
+  const raw = JSON.stringify(config, null, 2);
+  if (native) return (await backend()).ExportConfig(raw);
+  const url = URL.createObjectURL(
+    new Blob([raw], { type: "application/json" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "QuickDock.json";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}
+// Returns null when the user cancels the file dialog.
+export async function importConfig(): Promise<ConfigExport | null> {
+  if (native)
+    return (await (await backend()).ImportConfig()) as ConfigExport | null;
+  const file = await new Promise<File | null>((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = () => resolve(input.files?.[0] || null);
+    input.oncancel = () => resolve(null);
+    input.click();
+  });
+  if (!file) return null;
+  const config = JSON.parse(await file.text());
+  if (config?.app !== "QuickDock") throw Error("不是 QuickDock 配置文件");
+  if (config.version !== 1) throw Error("配置文件版本不受支持");
+  return config;
+}

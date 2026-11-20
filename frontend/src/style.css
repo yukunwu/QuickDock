@@ -1799,3 +1799,5 @@ html[lang="es"] .compact-kind { max-width:95px; }
 .clipboard-intro { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
 .clipboard-intro h3 { font-size: 14px; font-weight: 550; }
 .clipboard-intro ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 11px; color: var(--muted); }
+
+.backup-actions { display: flex; gap: 8px; flex-shrink: 0; }

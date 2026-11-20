@@ -68,12 +68,28 @@ export function ExchangeRates(refresh: boolean): $CancellablePromise<core$0.Rate
     return $Call.ByID(4082889811, refresh);
 }
 
+/**
+ * ExportConfig writes a backup built by the frontend (which owns the world
+ * clock list) to a path chosen in the save dialog; cancel returns false.
+ */
+export function ExportConfig(raw: string): $CancellablePromise<boolean> {
+    return $Call.ByID(3032844257, raw);
+}
+
 export function GoogleTranslationPage(windowID: string, text: string, source: string, target: string, action: string, rect: { [_ in string]?: number } | null): $CancellablePromise<void> {
     return $Call.ByID(2037417050, windowID, text, source, target, action, rect);
 }
 
 export function Hide(): $CancellablePromise<void> {
     return $Call.ByID(903678525);
+}
+
+/**
+ * ImportConfig reads and validates a backup; applying it is left to the
+ * frontend after the user confirms. A nil result means the dialog was cancelled.
+ */
+export function ImportConfig(): $CancellablePromise<core$0.ConfigExport | null> {
+    return $Call.ByID(3683199330);
 }
 
 export function InstallUpdate(): $CancellablePromise<void> {

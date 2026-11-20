@@ -36,6 +36,18 @@ export interface ClipboardEntry {
 }
 
 /**
+ * ConfigExport is a portable backup of preferences: settings, bookmarks and
+ * world clocks. Usage counts and histories stay on the machine.
+ */
+export interface ConfigExport {
+    "version": number;
+    "app": string;
+    "exportedAt": number;
+    "settings": Settings;
+    "worldClocks": string[] | null;
+}
+
+/**
  * LoginItem reports the OS login-item state; the OS is the source of truth,
  * so it is never stored in settings.json.
  */

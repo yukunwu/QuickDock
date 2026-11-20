@@ -6,6 +6,7 @@ export type {
     Bookmark,
     Calculation,
     ClipboardEntry,
+    ConfigExport,
     LoginItem,
     Rates,
     Settings,
