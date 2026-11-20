@@ -21,6 +21,12 @@ import {
   Code2,
   Coins,
   ClipboardList,
+  Regex,
+  KeyRound,
+  Palette,
+  Hexagon,
+  GitCompare,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 export type ToolID =
@@ -37,7 +43,13 @@ export type ToolID =
   | "translate"
   | "qrcode"
   | "currency"
-  | "clipboard";
+  | "clipboard"
+  | "regex"
+  | "jwt"
+  | "color"
+  | "base"
+  | "diff"
+  | "cron";
 export interface ToolDefinition {
   id: ToolID;
   name: string;
@@ -232,6 +244,90 @@ export const tools: ToolDefinition[] = [
     category: "日常",
     icon: CaseSensitive,
     color: "green",
+    version: "1.0.0",
+  },
+  {
+    id: "regex",
+    get name() {
+      return t("正则测试");
+    },
+    get subtitle() {
+      return t("匹配高亮、分组与替换预览");
+    },
+    keywords: "regex regexp regular expression zhengze zz 正则 匹配",
+    category: "开发",
+    icon: Regex,
+    color: "pink",
+    version: "1.0.0",
+  },
+  {
+    id: "jwt",
+    get name() {
+      return t("JWT 解码");
+    },
+    get subtitle() {
+      return t("查看头部、载荷与有效期");
+    },
+    keywords: "jwt token bearer jiema jm 令牌 解码",
+    category: "开发",
+    icon: KeyRound,
+    color: "yellow",
+    version: "1.0.0",
+  },
+  {
+    id: "color",
+    get name() {
+      return t("颜色转换");
+    },
+    get subtitle() {
+      return t("HEX、RGB、HSL、OKLCH 与对比度");
+    },
+    keywords: "color colour hex rgb hsl oklch yanse ys 颜色 取色",
+    category: "开发",
+    icon: Palette,
+    color: "pink",
+    version: "1.0.0",
+  },
+  {
+    id: "base",
+    get name() {
+      return t("进制转换");
+    },
+    get subtitle() {
+      return t("二、八、十、十六进制互转");
+    },
+    keywords: "base radix hex binary octal jinzhi jz 进制 二进制 十六进制",
+    category: "开发",
+    icon: Hexagon,
+    color: "cyan",
+    version: "1.0.0",
+  },
+  {
+    id: "diff",
+    get name() {
+      return t("文本对比");
+    },
+    get subtitle() {
+      return t("逐行比较两段文本的差异");
+    },
+    keywords: "diff compare duibi db 对比 差异 比较",
+    category: "开发",
+    icon: GitCompare,
+    color: "green",
+    version: "1.0.0",
+  },
+  {
+    id: "cron",
+    get name() {
+      return t("Cron 表达式");
+    },
+    get subtitle() {
+      return t("解析字段并预览下次运行时间");
+    },
+    keywords: "cron crontab schedule dingshi ds 定时 计划任务",
+    category: "开发",
+    icon: CalendarClock,
+    color: "blue",
     version: "1.0.0",
   },
   {

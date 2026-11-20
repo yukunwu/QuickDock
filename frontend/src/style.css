@@ -1788,7 +1788,7 @@ html[lang="es"] .compact-kind { max-width:95px; }
 .bookmark-presets > span { font-size: 10px; color: var(--muted); margin-right: 2px; }
 .bookmark-presets .secondary { padding: 4px 9px; font-size: 10px; }
 .clipboard-recording { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
-.clipboard-search { margin: 18px 0 10px; }
+.clipboard-workspace .search-wrap.clipboard-search { margin: 18px 0 10px; }
 .clipboard-search > span { flex-shrink: 0; font-size: 10px; color: var(--muted); }
 .clipboard-list { flex: 1; min-height: 0; overflow: auto; margin-bottom: 10px; }
 .clipboard-row { display: flex; align-items: center; gap: 4px; padding: 4px 6px 4px 4px; border: 1px solid transparent; border-radius: 8px; }
