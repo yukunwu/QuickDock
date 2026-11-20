@@ -59,6 +59,7 @@ it("decodes a JWT without verifying, keeping big integers and times", () => {
   expect(() => jwtDecode("a.b.c.d.e")).toThrow("JWE");
   expect(() => jwtDecode("!!.e30.x")).toThrow("Base64URL");
   expect(() => jwtDecode(enc("[1]") + ".e30.x")).toThrow("JSON 对象");
+  expect(() => jwtDecode("e30." + enc("123") + ".x")).toThrow("JSON 对象");
 });
 it("parses and formats colors in hex, rgb, hsl and oklch", () => {
   expect(parseColor("#f80")).toEqual({ r: 255, g: 136, b: 0, a: 1 });

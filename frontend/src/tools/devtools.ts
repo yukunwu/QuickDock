@@ -87,9 +87,10 @@ export function jwtDecode(token: string, now = Date.now()): JWTResult {
   if (parts.length !== 3) throw new Error("JWT 应由点分隔的三段组成");
   const json = (part: string) => {
     try {
-      const value = parse(base64URL(part));
-      if (!value || typeof value !== "object" || Array.isArray(value))
-        throw new Error();
+      const text = base64URL(part);
+      // lossless-json wraps bare numbers in objects; require a JSON object.
+      if (!text.trimStart().startsWith("{")) throw new Error();
+      const value = parse(text);
       return value as Record<string, unknown>;
     } catch (e) {
       if (e instanceof Error && e.message.startsWith("JWT")) throw e;

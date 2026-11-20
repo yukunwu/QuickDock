@@ -78,8 +78,8 @@ func main() {
 
   setValue(`input[aria-label="搜索应用和工具"]`,"zzq")
   setValue(`input[aria-label="搜索应用和工具"]`,"正则")
-  js(`document.querySelector('[role="option"]')?.textContent.includes('正则测试')`,"probe-regex-found")
-  s.window.ExecJS(`document.querySelector('[role="option"]').click()`)
+  // Click inside the polling check: the list re-renders while results settle.
+  js(`(()=>{const o=document.querySelector('[role="option"]');if(document.querySelector('.regex-highlight'))return true;if(o?.textContent.includes('正则测试'))o.click();return false})()`,"probe-regex-opened")
   js(`document.querySelector('.regex-highlight mark')`,"probe-regex-worker")
   setValue(`input[aria-label="正则表达式"]`,"^(a+)+$")
   setValue(`textarea[aria-label="测试文本"]`,"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!")

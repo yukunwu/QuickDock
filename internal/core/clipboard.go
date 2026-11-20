@@ -29,7 +29,8 @@ const (
 	ClipboardLimit = 200
 	// Larger copies (whole files, logs) are skipped rather than truncated.
 	ClipboardTextLimit = 100 * 1024
-	// Bounds the file rewritten on every copy.
+	// Bounds the encoded file rewritten on every copy, pins included, well
+	// under the size LoadClipboard accepts.
 	clipboardBudget = 4 * 1024 * 1024
 )
 
@@ -93,14 +94,23 @@ func AddClipboard(records []ClipboardEntry, text string, now time.Time) ([]Clipb
 		next.ID = hex.EncodeToString(id[:])
 	}
 	out := append([]ClipboardEntry{next}, rest...)
+	// Count the encoded size: JSON escapes such as \u003c can triple text.
+	sizes := make([]int, len(out))
 	size := 0
-	for _, r := range out {
-		size += len(r.Text)
+	for i, r := range out {
+		raw, _ := json.Marshal(r)
+		sizes[i] = len(raw)
+		size += sizes[i]
 	}
-	for i := len(out) - 1; i > 0 && (len(out) > ClipboardLimit || size > clipboardBudget); i-- {
-		if !out[i].Pinned {
-			size -= len(out[i].Text)
-			out = append(out[:i], out[i+1:]...)
+	over := func() bool { return len(out) > ClipboardLimit || size > clipboardBudget }
+	// Oldest unpinned entries go first; pins only when they alone overflow.
+	for _, pinned := range []bool{false, true} {
+		for i := len(out) - 1; i > 0 && over(); i-- {
+			if out[i].Pinned == pinned {
+				size -= sizes[i]
+				out = append(out[:i], out[i+1:]...)
+				sizes = append(sizes[:i], sizes[i+1:]...)
+			}
 		}
 	}
 	return out, true, nil

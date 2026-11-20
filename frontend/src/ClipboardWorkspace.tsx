@@ -56,6 +56,13 @@ export default function ClipboardWorkspace({
   const [selected, setSelected] = useState(0);
   const [confirmClear, setConfirmClear] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState("");
+  useEffect(() => {
+    void bridge
+      .clipboardStatus()
+      .then(setStatus)
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     let active = true;
     const load = () =>
@@ -79,6 +86,11 @@ export default function ClipboardWorkspace({
     () => orderClipboard(records, query),
     [records, query],
   );
+  // Deleting the last row must not leave the selection past the end.
+  useEffect(() => {
+    if (selected >= visible.length && selected > 0)
+      setSelected(Math.max(0, visible.length - 1));
+  }, [selected, visible.length]);
   useEffect(() => {
     document
       .getElementById(`clipboard-row-${selected}`)
@@ -133,6 +145,11 @@ export default function ClipboardWorkspace({
       {error && (
         <div className="inline-warning" role="alert">
           {error}
+        </div>
+      )}
+      {status && (
+        <div className="inline-warning" role="alert">
+          {errorText(status)}
         </div>
       )}
       {!enabled && !records.length ? (

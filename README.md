@@ -4,7 +4,7 @@
 
 支持简体中文、日本語、English、繁體中文、Español，默认跟随系统；可在偏好设置切换，保留工具输入。
 
-当前开发分支在 `online` 之上新增开机自启动、剪贴板历史、搜索关键词、文件搜索、结果次级操作、配置导入导出，以及正则、JWT、颜色、进制、文本对比、Cron 六个开发工具。这些更新尚未发布为新版本；公开稳定版仍为 v0.1.4。
+当前开发分支在 `online` 之上新增开机自启动、剪贴板历史、搜索关键词、文件搜索、结果次级操作、系统命令、配置导入导出，以及正则、JWT、颜色、进制、文本对比、Cron 六个开发工具。这些更新尚未发布为新版本；公开稳定版仍为 v0.1.4。
 
 ## 本地运行
 
@@ -23,6 +23,7 @@ open /Applications/QuickDock.app
 - 输入无应用匹配时，提供 Google 搜索与翻译快捷项；搜索使用默认浏览器，翻译保留在当前 Dock。设置可分别关闭这两个入口。
 - 搜索关键词：常用网址的 URL 含 `{query}`（或粘贴浏览器式 `%s`）即成为关键词，例如别名 `gh` + `https://github.com/search?q={query}`，在 Dock 输入 `gh rust` 直接搜索；只输入 `gh` 时 Enter／Tab 补全为 `gh `。设置中提供 GitHub、百度、Bing、Wikipedia 等常用搜索预设。
 - 文件搜索：输入 `f 名称`（或 `find`／`文件`）搜索主目录中的文件，Enter 用默认应用打开。macOS 使用 Spotlight，Windows 使用 Windows Search 索引，Linux 使用 plocate／locate；隐藏目录、`node_modules` 和 `~/Library` 等缓存不显示。若 `f` 已是某个网址关键词，则关键词优先。
+- 系统命令：输入“锁屏”／`lock` 或“睡眠”／`sleep` 立即锁定屏幕或睡眠（macOS 使用系统锁屏接口与 `pmset`，Windows 使用 `LockWorkStation`／`SetSuspendState`，Linux 使用 `loginctl`／`systemctl`）。命令只在输入时出现，不进入最近使用，可在设置中关闭。
 - 次级操作：`⌘↵`（Windows／Linux 为 `Ctrl+↵`）在访达／资源管理器中显示应用或文件，对网址则复制链接；底部提示当前所选项的操作。
 - 顶部设置按钮或 `⌘ ,` 进入设置；底部“全部工具”进入工具库。
 - 工具页占满窗口，不展示应用侧边栏和导航。Esc 回紧凑 Dock，Dock 再按 Esc 隐藏；独立工具 Esc 保存后关闭。`⌘ W` 隐藏；重新唤起清空搜索并回到紧凑 Dock，工具草稿仍在本次会话保留。
@@ -72,8 +73,8 @@ Windows 读取开始菜单／桌面快捷方式和已注册应用，ShellExecute
 - 配置和使用记录：`~/Library/Application Support/QuickDock/settings.json`。
 - 应用缓存：同目录 `apps.json`。JSON 带版本，原子写入；损坏配置保留 `.corrupt-时间戳` 备份并恢复默认，未知未来版本禁止覆盖。
 - Dock内普通工具未保存的输入仅保留本次会话；独立窗口输入自动保存到`tool-windows/`；内部内存回收通过当前 WebView 会话历史临时传递草稿。
-- 剪贴板历史写入同目录 `clipboard.json`（仅在开启后），版本化原子 JSON，最多200条、约4MiB；macOS／Windows 轮询系统剪贴板变更计数，只在复制后读取，开启前已在剪贴板的内容不记录；Linux 每1.5秒比较文本，Wayland 下可能只在 QuickDock 获得焦点时可读。
-- 配置导入导出：设置页“备份与迁移”导出语言、外观、快捷键、工具开关、常用网址和世界时钟；使用记录与各类历史不导出。导入前确认，快捷键在本机不可用时保留当前快捷键。
+- 剪贴板历史写入同目录 `clipboard.json`（仅在开启后），版本化原子 JSON，最多200条、约4MiB；macOS／Windows 轮询系统剪贴板变更计数，只在复制后读取，开启前已在剪贴板的内容不记录；Linux 每1.5秒通过 `wl-paste`（Wayland）或 `xclip`（X11）读取，并跳过 KeePassXC 等写入 `x-kde-passwordManagerHint` 的内容；未安装这两个工具时拒绝记录并在工具页说明。Windows 跳过 `ExcludeClipboardContentFromMonitorProcessing` 及 `CanIncludeInClipboardHistory` 为 0 的内容。容量按写入后的 JSON 大小计算，固定项也计入。
+- 配置导入导出：设置页“备份与迁移”导出语言、外观、快捷键、工具开关、常用网址和世界时钟；使用记录与各类历史不导出。导入前确认，快捷键在本机不可用时保留当前快捷键；剪贴板记录开关不随配置迁移，需在每台电脑上单独开启。
 - 明确保存的计算历史写入同目录 `calculations.json`，版本化原子JSON，最多100份／约8MiB。单稿纸最多200行／20000字符，重启后保留；浏览器预览历史独立保存在localStorage。
 - 翻译通过原生WebView直接展示Google翻译网页，网页内输入交给Google处理；不再调用公共翻译API。独立页保存当前原文／语言，Google网页可能要求网站验证。详见[网页翻译验证](docs/GOOGLE-WEB-VALIDATION.md)。
 - 浏览器预览明确使用示例应用，不能启动本机应用。原生版本通过 Wails 生成的类型绑定调用 Go。
@@ -94,7 +95,7 @@ pnpm --dir frontend install --frozen-lockfile
 
 ```sh
 pnpm --dir frontend dev                 # 浏览器预览，127.0.0.1:3415
-pnpm --dir frontend test                # 57 项逻辑测试
+pnpm --dir frontend test                # 58 项逻辑测试
 pnpm --dir frontend test:e2e            # Chrome 交互及搜索性能
 MACOSX_DEPLOYMENT_TARGET=13.0 \
 CGO_CFLAGS='-mmacosx-version-min=13.0' \

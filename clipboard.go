@@ -86,6 +86,15 @@ func (s *Service) notifyClipboardHistory() {
 	}
 	s.toolMu.Unlock()
 }
+
+// ClipboardStatus explains why copies cannot be recorded on this desktop,
+// or is empty when recording works.
+func (s *Service) ClipboardStatus() string {
+	if err := platform.ClipboardReady(); err != nil {
+		return err.Error()
+	}
+	return ""
+}
 func (s *Service) ClipboardHistory() ([]core.ClipboardEntry, error) {
 	s.historyMu.Lock()
 	defer s.historyMu.Unlock()

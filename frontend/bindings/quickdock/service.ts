@@ -40,6 +40,14 @@ export function ClipboardHistory(): $CancellablePromise<core$0.ClipboardEntry[] 
     return $Call.ByID(1480826563);
 }
 
+/**
+ * ClipboardStatus explains why copies cannot be recorded on this desktop,
+ * or is empty when recording works.
+ */
+export function ClipboardStatus(): $CancellablePromise<string> {
+    return $Call.ByID(2529284451);
+}
+
 export function CloseToolWindow(id: string): $CancellablePromise<void> {
     return $Call.ByID(1416666981, id);
 }

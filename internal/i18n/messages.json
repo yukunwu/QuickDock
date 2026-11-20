@@ -690,7 +690,8 @@
     "浏览器预览不能执行系统命令": "The browser preview can't run system commands",
     "未知系统命令": "Unknown system command",
     "系统拒绝进入睡眠": "The system refused to sleep",
-    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "Couldn't lock the screen: the desktop supports neither loginctl nor xdg-screensaver"
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "Couldn't lock the screen: the desktop supports neither loginctl nor xdg-screensaver",
+    "记录剪贴板需要安装 wl-clipboard（Wayland）或 xclip（X11），用来识别密码管理器的隐藏标记": "Recording the clipboard needs wl-clipboard (Wayland) or xclip (X11) to recognize password managers' concealed marker"
   },
   "ja": {
     "偏好设置": "環境設定",
@@ -1383,7 +1384,8 @@
     "浏览器预览不能执行系统命令": "ブラウザプレビューではシステムコマンドを実行できません",
     "未知系统命令": "不明なシステムコマンド",
     "系统拒绝进入睡眠": "システムがスリープを拒否しました",
-    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "画面をロックできません：デスクトップが loginctl と xdg-screensaver に対応していません"
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "画面をロックできません：デスクトップが loginctl と xdg-screensaver に対応していません",
+    "记录剪贴板需要安装 wl-clipboard（Wayland）或 xclip（X11），用来识别密码管理器的隐藏标记": "クリップボードの記録には、パスワードマネージャの非表示マークを識別するため wl-clipboard（Wayland）または xclip（X11）が必要です"
   },
   "zh-TW": {
     "偏好设置": "偏好設定",
@@ -2076,7 +2078,8 @@
     "浏览器预览不能执行系统命令": "瀏覽器預覽無法執行系統指令",
     "未知系统命令": "未知的系統指令",
     "系统拒绝进入睡眠": "系統拒絕進入睡眠",
-    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "無法鎖定螢幕：桌面環境不支援 loginctl 或 xdg-screensaver"
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "無法鎖定螢幕：桌面環境不支援 loginctl 或 xdg-screensaver",
+    "记录剪贴板需要安装 wl-clipboard（Wayland）或 xclip（X11），用来识别密码管理器的隐藏标记": "記錄剪貼簿需要安裝 wl-clipboard（Wayland）或 xclip（X11），用來識別密碼管理器的隱藏標記"
   },
   "es": {
     "偏好设置": "Preferencias",
@@ -2769,6 +2772,7 @@
     "浏览器预览不能执行系统命令": "La vista previa del navegador no puede ejecutar comandos del sistema",
     "未知系统命令": "Comando del sistema desconocido",
     "系统拒绝进入睡眠": "El sistema rechazó la suspensión",
-    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "No se pudo bloquear: el escritorio no admite loginctl ni xdg-screensaver"
+    "无法锁定屏幕：桌面环境不支持 loginctl 或 xdg-screensaver": "No se pudo bloquear: el escritorio no admite loginctl ni xdg-screensaver",
+    "记录剪贴板需要安装 wl-clipboard（Wayland）或 xclip（X11），用来识别密码管理器的隐藏标记": "Registrar el portapapeles requiere wl-clipboard (Wayland) o xclip (X11) para reconocer la marca de los gestores de contraseñas"
   }
 }

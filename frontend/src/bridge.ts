@@ -507,6 +507,10 @@ export function previewRecordClipboard(text: string) {
     ...old.filter((r) => r.text !== text),
   ]);
 }
+// Non-empty when this desktop cannot record copies safely (Linux tools).
+export async function clipboardStatus(): Promise<string> {
+  return native ? (await backend()).ClipboardStatus() : "";
+}
 export async function clipboardHistory(): Promise<ClipboardEntry[]> {
   if (native) return (await (await backend()).ClipboardHistory()) || [];
   return previewClipboard();

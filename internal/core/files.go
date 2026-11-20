@@ -26,7 +26,7 @@ func RankFiles(paths []string, query string, home string, limit int) []FileHit {
 	seen := map[string]bool{}
 	for _, path := range paths {
 		path = filepath.Clean(strings.TrimSpace(path))
-		if path == "." || seen[path] || noisyPath(path, home) {
+		if path == "." || seen[path] || NoisyPath(path, home) {
 			continue
 		}
 		seen[path] = true
@@ -60,7 +60,10 @@ func RankFiles(paths []string, query string, home string, limit int) []FileHit {
 	}
 	return out
 }
-func noisyPath(path, home string) bool {
+
+// NoisyPath reports hidden folders, dependency trees and app caches that
+// drown out user files; searches drop them before counting hits.
+func NoisyPath(path, home string) bool {
 	rel := path
 	if home != "" {
 		rel = strings.TrimPrefix(path, home)

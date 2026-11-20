@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,5 +68,23 @@ func TestLoadClipboardRejectsCorruptHistory(t *testing.T) {
 		if _, err := LoadClipboard(path); err == nil {
 			t.Fatal("accepted", raw)
 		}
+	}
+}
+func TestClipboardBudgetCountsEscapesAndPins(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clipboard.json")
+	var records []ClipboardEntry
+	heavy := strings.Repeat("<a>&", ClipboardTextLimit/4-8)
+	for i := 0; i < 60; i++ {
+		records, _, _ = AddClipboard(records, fmt.Sprintf("%s%04d", heavy, i), time.UnixMilli(int64(i+1)))
+		records[0].Pinned = true
+		if err := AtomicJSON(path, ClipboardFile{Version: 1, Records: records}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadClipboard(path); err != nil {
+			t.Fatalf("history unreadable after %d copies: %v", i+1, err)
+		}
+	}
+	if records[0].Text != heavy+"0059" {
+		t.Fatal("newest entry dropped")
 	}
 }

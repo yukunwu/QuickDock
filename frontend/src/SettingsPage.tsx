@@ -293,13 +293,23 @@ function BackupSection({
   };
   const apply = (config: bridge.ConfigExport) =>
     run(async () => {
-      const settings = { ...config.settings, version: data.settings.version };
+      // Recording the clipboard stays an opt-in on each machine.
+      const settings = {
+        ...config.settings,
+        version: data.settings.version,
+        clipboardHistory: data.settings.clipboardHistory,
+      };
       let shortcutKept = false;
       try {
         await save(settings);
-      } catch {
+      } catch (e) {
         // A shortcut from another platform or already taken must not block
-        // the rest of the backup.
+        // the rest of the backup; any other failure is reported as is.
+        if (
+          settings.shortcut === data.settings.shortcut ||
+          !(await bridge.snapshot()).shortcutError
+        )
+          throw e;
         await save({ ...settings, shortcut: data.settings.shortcut });
         shortcutKept = true;
       }
@@ -334,7 +344,7 @@ function BackupSection({
                   version: 1,
                   app: "QuickDock",
                   exportedAt: Date.now(),
-                  settings: data.settings,
+                  settings: { ...data.settings, clipboardHistory: undefined },
                   worldClocks: loadWorldClocks(),
                 });
                 if (saved) notify(t("配置已导出"));

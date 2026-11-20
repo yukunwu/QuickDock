@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
@@ -18,13 +19,18 @@ import (
 )
 
 func powershell(script string, extraEnv ...string) ([]byte, error) {
+	return powershellContext(context.Background(), script, extraEnv...)
+}
+
+// powershellContext kills PowerShell when ctx ends, e.g. a superseded search.
+func powershellContext(ctx context.Context, script string, extraEnv ...string) ([]byte, error) {
 	units := utf16.Encode([]rune(script))
 	raw := make([]byte, len(units)*2)
 	for i, u := range units {
 		binary.LittleEndian.PutUint16(raw[i*2:], u)
 	}
 	executable := filepath.Join(os.Getenv("SystemRoot"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
-	cmd := exec.Command(executable, "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", base64.StdEncoding.EncodeToString(raw))
+	cmd := exec.CommandContext(ctx, executable, "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", base64.StdEncoding.EncodeToString(raw))
 	cmd.Env = append(os.Environ(), extraEnv...)
 	cmd.SysProcAttr = &windows.SysProcAttr{HideWindow: true}
 	return cmd.Output()

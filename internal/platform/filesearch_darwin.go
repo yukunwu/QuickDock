@@ -21,7 +21,7 @@ func SearchFiles(ctx context.Context, query string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return firstLines(ctx, exec.CommandContext(ctx, "/usr/bin/mdfind", "-onlyin", home, "-name", query))
+	return firstLines(ctx, exec.CommandContext(ctx, "/usr/bin/mdfind", "-onlyin", home, "-name", query), homeFiles(home))
 }
 func OpenPath(path string) error {
 	if _, err := os.Stat(path); err != nil {

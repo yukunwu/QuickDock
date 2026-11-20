@@ -23,3 +23,6 @@ func ReadClipboard() (string, bool) {
 	defer C.free(unsafe.Pointer(raw))
 	return C.GoString(raw), true
 }
+
+// ClipboardReady reports whether copies can be recorded safely here.
+func ClipboardReady() error { return nil }

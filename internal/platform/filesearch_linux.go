@@ -5,11 +5,10 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 // SearchFiles uses the locate database (plocate or mlocate), which may lag
-// behind recent changes until updatedb runs; hits outside home are dropped.
+// behind recent changes until updatedb runs.
 func SearchFiles(ctx context.Context, query string) ([]string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -20,17 +19,9 @@ func SearchFiles(ctx context.Context, query string) ([]string, error) {
 		if err != nil {
 			continue
 		}
-		lines, err := firstLines(ctx, exec.CommandContext(ctx, bin, "-i", "-b", "-l", "2000", "--", query))
-		if err != nil {
-			return nil, err
-		}
-		inside := lines[:0]
-		for _, line := range lines {
-			if strings.HasPrefix(line, home+"/") {
-				inside = append(inside, line)
-			}
-		}
-		return inside, nil
+		// No -l: the limit applies to kept hits, after dropping other users'
+		// files and caches, so a common name still reaches home files.
+		return firstLines(ctx, exec.CommandContext(ctx, bin, "-i", "-b", "--", query), homeFiles(home))
 	}
 	return nil, errors.New("未找到 plocate 或 locate，请先安装后再搜索文件")
 }
