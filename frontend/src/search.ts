@@ -16,7 +16,9 @@ import {
   Languages,
   Clock3,
   NotebookPen,
+  FileText,
 } from "lucide-react";
+import type { FileHit } from "./bridge";
 import {
   bookmarkKeywords,
   bookmarkTarget,
@@ -382,4 +384,29 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
     return [...online, ...matched];
   matched.push(...online);
   return matched;
+}
+
+// "f report" searches files in the home folder, unless "f" is a bookmark
+// search keyword, which takes precedence.
+export function fileQuery(query: string, data: Snapshot) {
+  const match = /^(?:f|find|文件)\s+(\S[\s\S]*)$/i.exec(query.trim());
+  if (!match || data.settings.disabledTools.includes("files")) return "";
+  const head = fold(query.trim().split(/\s+/)[0]);
+  const keyword =
+    !data.settings.disabledTools.includes("bookmarks") &&
+    data.settings.bookmarks.some(
+      (b) => isSearchKeyword(b) && bookmarkKeywords(b).includes(head),
+    );
+  return keyword ? "" : match[1].trim();
+}
+export function fileResults(hits: FileHit[]): SearchResult[] {
+  return hits.map((hit) => ({
+    id: hit.path,
+    title: hit.name,
+    subtitle: hit.folder,
+    kind: "file" as const,
+    icon: FileText,
+    color: "neutral",
+    value: hit.path,
+  }));
 }

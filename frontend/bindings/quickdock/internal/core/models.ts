@@ -47,6 +47,12 @@ export interface ConfigExport {
     "worldClocks": string[] | null;
 }
 
+export interface FileHit {
+    "path": string;
+    "name": string;
+    "folder": string;
+}
+
 /**
  * LoginItem reports the OS login-item state; the OS is the source of truth,
  * so it is never stored in settings.json.

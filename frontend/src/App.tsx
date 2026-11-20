@@ -36,7 +36,7 @@ import {
   type ToolID,
 } from "./catalog";
 import * as bridge from "./bridge";
-import { searchEntries } from "./search";
+import { fileQuery, fileResults, searchEntries } from "./search";
 import { calculateSheet } from "./tools/notebook";
 import { bookmarkTarget } from "./tools/bookmarks";
 import CompactLauncher from "./CompactLauncher";
@@ -206,10 +206,43 @@ export default function App() {
     (t) => !data.settings.disabledTools.includes(t.id),
   );
   const locale = getLanguage();
+  // "f name" switches the Dock to file search, answered asynchronously.
+  const files = fileQuery(query, data);
+  const [fileSearch, setFileSearch] = useState<{
+    query: string;
+    hits: bridge.FileHit[];
+    error: string;
+  }>({ query: "", hits: [], error: "" });
+  useEffect(() => {
+    if (!files) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      bridge
+        .searchFiles(files, controller.signal)
+        .then((hits) => setFileSearch({ query: files, hits, error: "" }))
+        .catch((e) => {
+          if (!controller.signal.aborted)
+            setFileSearch({ query: files, hits: [], error: errorText(e) });
+        });
+    }, 180);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [files]);
   const results = useMemo(
-    () => searchEntries(query, data),
-    [query, data, locale],
+    () =>
+      files
+        ? fileResults(fileSearch.query === files ? fileSearch.hits : [])
+        : searchEntries(query, data),
+    [query, data, locale, files, fileSearch],
   );
+  const searchStatus = !files
+    ? ""
+    : fileSearch.query !== files
+      ? t("正在搜索文件…")
+      : fileSearch.error ||
+        (fileSearch.hits.length ? "" : t("没有找到匹配的文件"));
   const save = async (settings: Settings) => {
     setBusy(true);
     try {
@@ -245,6 +278,7 @@ export default function App() {
         setActiveTool(r.id as ToolID);
         await bridge.recordUsage(r.id);
       } else if (r.kind === "app") await bridge.launch(r.id);
+      else if (r.kind === "file") await bridge.openFile(r.value!);
       else if (r.kind === "bookmark")
         await bridge.openBookmark(r.id, r.value || "");
       else {
@@ -269,10 +303,11 @@ export default function App() {
   };
   // ⌘↵ / Ctrl+↵: reveal an app, copy a bookmark's URL; otherwise as ↵.
   const secondary = async (r?: SearchResult) => {
-    if (!r || (r.kind !== "app" && r.kind !== "bookmark")) return execute(r);
+    if (!r || !["app", "bookmark", "file"].includes(r.kind)) return execute(r);
     setToast("");
     try {
       if (r.kind === "app") await bridge.revealApp(r.id);
+      else if (r.kind === "file") await bridge.revealFile(r.value!);
       else {
         const b = data.settings.bookmarks.find((b) => b.id === r.id);
         if (!b) return;
@@ -334,6 +369,7 @@ export default function App() {
             query={query}
             setQuery={setQuery}
             results={results}
+            status={searchStatus}
             selected={selected}
             setSelected={setSelected}
             execute={execute}

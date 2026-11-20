@@ -571,3 +571,27 @@ export async function importConfig(): Promise<ConfigExport | null> {
   if (config.version !== 1) throw Error("配置文件版本不受支持");
   return config;
 }
+
+export type FileHit = { path: string; name: string; folder: string };
+export async function searchFiles(
+  query: string,
+  signal: AbortSignal,
+): Promise<FileHit[]> {
+  if (!native) throw Error("浏览器预览不能搜索本机文件");
+  const api = await backend();
+  signal.throwIfAborted();
+  const call = api.SearchFiles(query);
+  const cancel = () => void call.cancel().catch(() => {});
+  signal.addEventListener("abort", cancel, { once: true });
+  try {
+    return (await call) || [];
+  } finally {
+    signal.removeEventListener("abort", cancel);
+  }
+}
+export async function openFile(path: string) {
+  if (native) return (await backend()).OpenFile(path);
+}
+export async function revealFile(path: string) {
+  if (native) return (await backend()).RevealFile(path);
+}

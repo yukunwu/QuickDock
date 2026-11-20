@@ -26,6 +26,7 @@ export default function CompactLauncher({
   query,
   setQuery,
   results,
+  status,
   selected,
   setSelected,
   execute,
@@ -43,6 +44,7 @@ export default function CompactLauncher({
   query: string;
   setQuery: (q: string) => void;
   results: SearchResult[];
+  status?: string;
   selected: number;
   setSelected: (n: number) => void;
   execute: (r?: SearchResult) => Promise<void>;
@@ -216,7 +218,7 @@ export default function CompactLauncher({
               {data.indexing ? (
                 t("正在更新索引…")
               ) : searching ? (
-                t("{count} 项", { count: results.length })
+                status || t("{count} 项", { count: results.length })
               ) : (
                 <button onClick={() => setExpanded(!expanded)}>
                   {expanded ? t("收起") : t("展开")} ({results.length}){" "}
@@ -252,17 +254,19 @@ export default function CompactLauncher({
                         ? t("应用")
                         : r.kind === "tool"
                           ? t("工具")
-                          : r.kind === "bookmark"
-                            ? r.value !== undefined
-                              ? t("搜索")
-                              : t("网址")
-                            : r.kind === "websearch"
-                              ? t("搜索")
-                              : r.kind === "translation"
-                                ? t("翻译")
-                                : r.kind === "time"
-                                  ? t("时间")
-                                  : t("复制")}
+                          : r.kind === "file"
+                            ? t("文件")
+                            : r.kind === "bookmark"
+                              ? r.value !== undefined
+                                ? t("搜索")
+                                : t("网址")
+                              : r.kind === "websearch"
+                                ? t("搜索")
+                                : r.kind === "translation"
+                                  ? t("翻译")
+                                  : r.kind === "time"
+                                    ? t("时间")
+                                    : t("复制")}
                     </span>
                   )}
                   {searching && selected === i && <CornerDownLeft size={14} />}
@@ -272,8 +276,8 @@ export default function CompactLauncher({
           ) : (
             <div className="empty">
               <Search size={24} />
-              <strong>{t("没有找到“{query}”", { query })}</strong>
-              <span>{t("试试应用名称、拼音或工具关键词")}</span>
+              <strong>{status || t("没有找到“{query}”", { query })}</strong>
+              {!status && <span>{t("试试应用名称、拼音或工具关键词")}</span>}
             </div>
           )}
         </div>
@@ -293,11 +297,12 @@ export default function CompactLauncher({
           {searching &&
             !translationOpen &&
             (visible[selected]?.kind === "app" ||
+              visible[selected]?.kind === "file" ||
               (visible[selected]?.kind === "bookmark" &&
                 !visible[selected]?.complete)) && (
               <kbd>
                 {commandLabel}
-                {visible[selected]?.kind === "app"
+                {visible[selected]?.kind !== "bookmark"
                   ? t(isMac ? "↵ 在访达中显示" : "↵ 显示文件位置")
                   : t("↵ 复制网址")}
               </kbd>

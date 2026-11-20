@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"quickdock/internal/core"
 	"quickdock/internal/platform"
+	"strings"
 	"sync"
 	"time"
 )
@@ -55,6 +56,7 @@ type Service struct {
 	shortcutError      string
 	loadError          error
 	editing            bool
+	fileHits           map[string]bool
 	app                *application.App
 	window             *application.WebviewWindow
 	idleRelease        *time.Timer
@@ -229,6 +231,9 @@ func (s *Service) RevealApp(id string) error {
 	s.mu.Unlock()
 	if path == "" {
 		return errors.New("未找到应用，请刷新索引")
+	}
+	if _, err := os.Stat(path); err != nil && !strings.HasPrefix(path, `shell:AppsFolder\`) {
+		return errors.New("应用入口已移动或删除，请刷新索引")
 	}
 	if err := platform.RevealPath(path); err != nil {
 		return err

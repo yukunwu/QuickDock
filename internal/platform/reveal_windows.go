@@ -15,7 +15,7 @@ func RevealPath(path string) error {
 		return errors.New("该应用没有可显示的文件位置")
 	}
 	if _, err := os.Stat(path); err != nil {
-		return errors.New("应用入口已移动或删除，请刷新索引")
+		return errors.New("文件已移动或删除")
 	}
 	cmd := exec.Command(filepath.Join(os.Getenv("SystemRoot"), "explorer.exe"))
 	// Explorer parses its own command line; /select needs the path quoted as one token.

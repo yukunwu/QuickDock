@@ -115,6 +115,10 @@ export function OpenBookmark(id: string, query: string): $CancellablePromise<voi
     return $Call.ByID(3635377621, id, query);
 }
 
+export function OpenFile(path: string): $CancellablePromise<void> {
+    return $Call.ByID(334650783, path);
+}
+
 export function OpenGoogleSearch(query: string): $CancellablePromise<void> {
     return $Call.ByID(1794324386, query);
 }
@@ -162,6 +166,10 @@ export function RevealApp(id: string): $CancellablePromise<void> {
     return $Call.ByID(1432362027, id);
 }
 
+export function RevealFile(path: string): $CancellablePromise<void> {
+    return $Call.ByID(1155574422, path);
+}
+
 /**
  * SaveQRCode only writes to a path explicitly selected in the native save dialog.
  * An empty selection is cancellation, not an error.
@@ -176,6 +184,14 @@ export function SaveSettings(next: core$0.Settings): $CancellablePromise<core$0.
 
 export function SaveToolWindow(id: string, session: string): $CancellablePromise<void> {
     return $Call.ByID(1926538382, id, session);
+}
+
+/**
+ * SearchFiles lists files in the home folder whose names contain query.
+ * Only paths from the latest search may be opened or revealed afterwards.
+ */
+export function SearchFiles(query: string): $CancellablePromise<core$0.FileHit[] | null> {
+    return $Call.ByID(1682328196, query);
 }
 
 export function SetEditing(editing: boolean): $CancellablePromise<void> {

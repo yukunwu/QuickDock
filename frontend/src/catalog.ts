@@ -27,6 +27,7 @@ import {
   Hexagon,
   GitCompare,
   CalendarClock,
+  FileSearch,
   type LucideIcon,
 } from "lucide-react";
 export type ToolID =
@@ -391,7 +392,8 @@ export interface SearchResult {
     | "calculation"
     | "time"
     | "websearch"
-    | "translation";
+    | "translation"
+    | "file";
   icon: LucideIcon;
   color: string;
   image?: string;
@@ -460,5 +462,16 @@ export const launcherActions = [
     },
     icon: Search,
     color: "blue",
+  },
+  {
+    id: "files",
+    get name() {
+      return t("文件搜索");
+    },
+    get subtitle() {
+      return t("在 Dock 输入 f 加空格，搜索主目录中的文件");
+    },
+    icon: FileSearch,
+    color: "neutral",
   },
 ];

@@ -666,7 +666,19 @@
     "确认导入": "Import",
     "不是 QuickDock 配置文件": "This isn't a QuickDock configuration file",
     "配置文件版本不受支持": "This configuration file version isn't supported",
-    "配置文件内容无效": "The configuration file contains invalid data"
+    "配置文件内容无效": "The configuration file contains invalid data",
+    "文件搜索": "File search",
+    "在 Dock 输入 f 加空格，搜索主目录中的文件": "Type f and a space in the Dock to search files in your home folder",
+    "正在搜索文件…": "Searching files…",
+    "没有找到匹配的文件": "No matching files",
+    "文件": "File",
+    "浏览器预览不能搜索本机文件": "The browser preview can't search files on this computer",
+    "文件已移动或删除": "The file was moved or deleted",
+    "没有可打开此文件的应用": "No app can open this file",
+    "请重新搜索该文件": "Search for the file again",
+    "文件搜索超时，请输入更具体的名称": "File search timed out; try a more specific name",
+    "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "The Windows Search index isn't available; make sure the Windows Search service is running",
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "plocate or locate isn't installed; install one to search files"
   },
   "ja": {
     "偏好设置": "環境設定",
@@ -1335,7 +1347,19 @@
     "确认导入": "読み込む",
     "不是 QuickDock 配置文件": "QuickDock の設定ファイルではありません",
     "配置文件版本不受支持": "この設定ファイルのバージョンには対応していません",
-    "配置文件内容无效": "設定ファイルの内容が無効です"
+    "配置文件内容无效": "設定ファイルの内容が無効です",
+    "文件搜索": "ファイル検索",
+    "在 Dock 输入 f 加空格，搜索主目录中的文件": "Dock で f とスペースを入力し、ホームフォルダ内のファイルを検索",
+    "正在搜索文件…": "ファイルを検索中…",
+    "没有找到匹配的文件": "一致するファイルはありません",
+    "文件": "ファイル",
+    "浏览器预览不能搜索本机文件": "ブラウザプレビューではこのコンピュータのファイルを検索できません",
+    "文件已移动或删除": "ファイルは移動または削除されました",
+    "没有可打开此文件的应用": "このファイルを開けるアプリがありません",
+    "请重新搜索该文件": "ファイルをもう一度検索してください",
+    "文件搜索超时，请输入更具体的名称": "ファイル検索がタイムアウトしました。より具体的な名前を入力してください",
+    "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "Windows Search インデックスを利用できません。Windows Search サービスが有効か確認してください",
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "plocate または locate が見つかりません。インストールしてから検索してください"
   },
   "zh-TW": {
     "偏好设置": "偏好設定",
@@ -2004,7 +2028,19 @@
     "确认导入": "確認匯入",
     "不是 QuickDock 配置文件": "不是 QuickDock 設定檔",
     "配置文件版本不受支持": "設定檔版本不受支援",
-    "配置文件内容无效": "設定檔內容無效"
+    "配置文件内容无效": "設定檔內容無效",
+    "文件搜索": "檔案搜尋",
+    "在 Dock 输入 f 加空格，搜索主目录中的文件": "在 Dock 輸入 f 加空格，搜尋主目錄中的檔案",
+    "正在搜索文件…": "正在搜尋檔案…",
+    "没有找到匹配的文件": "沒有找到相符的檔案",
+    "文件": "檔案",
+    "浏览器预览不能搜索本机文件": "瀏覽器預覽無法搜尋本機檔案",
+    "文件已移动或删除": "檔案已移動或刪除",
+    "没有可打开此文件的应用": "沒有可開啟此檔案的 App",
+    "请重新搜索该文件": "請重新搜尋該檔案",
+    "文件搜索超时，请输入更具体的名称": "檔案搜尋逾時，請輸入更具體的名稱",
+    "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "Windows 搜尋索引無法使用，請確認 Windows Search 服務已開啟",
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "未找到 plocate 或 locate，請先安裝後再搜尋檔案"
   },
   "es": {
     "偏好设置": "Preferencias",
@@ -2673,6 +2709,18 @@
     "确认导入": "Importar",
     "不是 QuickDock 配置文件": "No es un archivo de configuración de QuickDock",
     "配置文件版本不受支持": "Esta versión del archivo no es compatible",
-    "配置文件内容无效": "El archivo contiene datos no válidos"
+    "配置文件内容无效": "El archivo contiene datos no válidos",
+    "文件搜索": "Buscar archivos",
+    "在 Dock 输入 f 加空格，搜索主目录中的文件": "Escribe f y un espacio en el Dock para buscar archivos en tu carpeta personal",
+    "正在搜索文件…": "Buscando archivos…",
+    "没有找到匹配的文件": "No hay archivos que coincidan",
+    "文件": "Archivo",
+    "浏览器预览不能搜索本机文件": "La vista previa del navegador no puede buscar archivos",
+    "文件已移动或删除": "El archivo se movió o eliminó",
+    "没有可打开此文件的应用": "Ninguna app puede abrir este archivo",
+    "请重新搜索该文件": "Vuelve a buscar el archivo",
+    "文件搜索超时，请输入更具体的名称": "La búsqueda tardó demasiado; usa un nombre más específico",
+    "Windows 搜索索引不可用，请确认 Windows Search 服务已开启": "El índice de Windows Search no está disponible; comprueba que el servicio esté activo",
+    "未找到 plocate 或 locate，请先安装后再搜索文件": "No se encontró plocate ni locate; instala uno para buscar archivos"
   }
 }

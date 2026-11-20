@@ -287,3 +287,24 @@ it("predicts time, calculation, translation or app search from the input", () =>
     "calculation",
   );
 });
+it("f-prefixed queries search files unless f is a bookmark keyword", async () => {
+  const { fileQuery } = await import("./search");
+  expect(fileQuery("f  annual report ", data)).toBe("annual report");
+  expect(fileQuery("文件 合同", data)).toBe("合同");
+  expect(fileQuery("ff report", data)).toBe("");
+  const keyword = {
+    ...data,
+    settings: {
+      ...data.settings,
+      bookmarks: [
+        { id: "f", name: "F", url: "https://f.dev/?q={query}", alias: "f" },
+      ],
+    },
+  };
+  expect(fileQuery("f report", keyword)).toBe("");
+  const disabled = {
+    ...data,
+    settings: { ...data.settings, disabledTools: ["files"] },
+  };
+  expect(fileQuery("f report", disabled)).toBe("");
+});

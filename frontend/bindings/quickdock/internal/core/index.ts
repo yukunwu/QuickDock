@@ -7,6 +7,7 @@ export type {
     Calculation,
     ClipboardEntry,
     ConfigExport,
+    FileHit,
     LoginItem,
     Rates,
     Settings,

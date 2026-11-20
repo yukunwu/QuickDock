@@ -13,7 +13,7 @@ import (
 // back to opening its folder when no FileManager1 service is available.
 func RevealPath(path string) error {
 	if _, err := os.Stat(path); err != nil {
-		return errors.New("应用入口已移动或删除，请刷新索引")
+		return errors.New("文件已移动或删除")
 	}
 	// GVariant text syntax: a quote in the URI would end the string literal.
 	uri := strings.ReplaceAll((&url.URL{Scheme: "file", Path: path}).String(), "'", "%27")

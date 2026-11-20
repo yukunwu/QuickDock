@@ -16,7 +16,7 @@ import (
 // RevealPath selects the item in Finder.
 func RevealPath(path string) error {
 	if _, err := os.Stat(path); err != nil {
-		return errors.New("应用入口已移动或删除，请刷新索引")
+		return errors.New("文件已移动或删除")
 	}
 	return application.InvokeSyncWithError(func() error {
 		p := C.CString(path)
