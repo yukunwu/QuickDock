@@ -19,6 +19,7 @@ import {
   Compass,
   Folder,
   Code2,
+  Coins,
   type LucideIcon,
 } from "lucide-react";
 export type ToolID =
@@ -33,7 +34,8 @@ export type ToolID =
   | "text"
   | "bookmarks"
   | "translate"
-  | "qrcode";
+  | "qrcode"
+  | "currency";
 export interface ToolDefinition {
   id: ToolID;
   name: string;
@@ -74,6 +76,21 @@ export const tools: ToolDefinition[] = [
     version: "1.0.0",
   },
   {
+    id: "currency",
+    get name() {
+      return t("汇率换算");
+    },
+    get subtitle() {
+      return t("欧洲央行每日参考汇率，支持多币种对照");
+    },
+    keywords:
+      "currency exchange rate fx huilv hl huobi 汇率 货币 usd cny rmb jpy eur",
+    category: "日常",
+    icon: Coins,
+    color: "yellow",
+    version: "1.0.0",
+  },
+  {
     id: "calculator",
     get name() {
       return t("计算稿纸");
@@ -104,12 +121,13 @@ export const tools: ToolDefinition[] = [
   {
     id: "timestamp",
     get name() {
-      return t("时间戳转换");
+      return t("时间与时区");
     },
     get subtitle() {
-      return t("日期与秒、毫秒时间戳互转");
+      return t("时间戳、日期互转与世界时钟");
     },
-    keywords: "timestamp time shijianchuo sjc",
+    keywords:
+      "timestamp time timezone zone clock shijianchuo sjc shiqu sq shijian 时间戳 时区 世界时钟",
     category: "开发",
     icon: Clock3,
     color: "blue",
@@ -149,9 +167,9 @@ export const tools: ToolDefinition[] = [
       return t("UUID 生成");
     },
     get subtitle() {
-      return t("生成单个或批量 UUID v4");
+      return t("批量生成 UUID v4／v7，多种格式");
     },
-    keywords: "uuid id suiji",
+    keywords: "uuid guid id v4 v7 suiji",
     category: "开发",
     icon: Fingerprint,
     color: "pink",
@@ -253,7 +271,13 @@ export interface SearchResult {
   title: string;
   subtitle: string;
   kind:
-    "app" | "tool" | "bookmark" | "calculation" | "websearch" | "translation";
+    | "app"
+    | "tool"
+    | "bookmark"
+    | "calculation"
+    | "time"
+    | "websearch"
+    | "translation";
   icon: LucideIcon;
   color: string;
   image?: string;

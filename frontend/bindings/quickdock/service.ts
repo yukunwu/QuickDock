@@ -25,6 +25,10 @@ export function ClearCalculations(): $CancellablePromise<void> {
     return $Call.ByID(2878727492);
 }
 
+export function ClearTranslations(): $CancellablePromise<void> {
+    return $Call.ByID(1621221226);
+}
+
 export function CloseToolWindow(id: string): $CancellablePromise<void> {
     return $Call.ByID(1416666981, id);
 }
@@ -35,6 +39,18 @@ export function Copy(text: string): $CancellablePromise<void> {
 
 export function DeleteCalculation(id: string): $CancellablePromise<core$0.Calculation[] | null> {
     return $Call.ByID(3516954087, id);
+}
+
+export function DeleteTranslation(id: string): $CancellablePromise<core$0.TranslationRecord[] | null> {
+    return $Call.ByID(3703917925, id);
+}
+
+/**
+ * ExchangeRates returns cached rates while fresh, otherwise downloads them.
+ * When offline it falls back to the last saved table, marked stale.
+ */
+export function ExchangeRates(refresh: boolean): $CancellablePromise<core$0.Rates> {
+    return $Call.ByID(4082889811, refresh);
 }
 
 export function GoogleTranslationPage(windowID: string, text: string, source: string, target: string, action: string, rect: { [_ in string]?: number } | null): $CancellablePromise<void> {
@@ -73,6 +89,14 @@ export function OpenTranslationPage(text: string, source: string, target: string
     return $Call.ByID(1312152035, text, source, target);
 }
 
+/**
+ * RecordCalculation autosaves the sheet being edited under id; an empty or
+ * deleted id starts a new history record.
+ */
+export function RecordCalculation(id: string, source: string, results: string[] | null): $CancellablePromise<$models.CalculationSaved> {
+    return $Call.ByID(3851587869, id, source, results);
+}
+
 export function RecordUsage(id: string): $CancellablePromise<void> {
     return $Call.ByID(4001834035, id);
 }
@@ -83,10 +107,6 @@ export function RefreshApps(): $CancellablePromise<$models.Snapshot> {
 
 export function RestartAfterUpdate(): $CancellablePromise<void> {
     return $Call.ByID(960226559);
-}
-
-export function SaveCalculation(source: string, results: string[] | null): $CancellablePromise<core$0.Calculation[] | null> {
-    return $Call.ByID(18935457, source, results);
 }
 
 /**
@@ -138,6 +158,10 @@ export function ToolWindowState(id: string): $CancellablePromise<core$0.ToolWind
 
 export function Translate(text: string, source: string, target: string, provider: string): $CancellablePromise<core$0.Translation> {
     return $Call.ByID(1258377029, text, source, target, provider);
+}
+
+export function TranslationHistory(): $CancellablePromise<core$0.TranslationRecord[] | null> {
+    return $Call.ByID(1829799660);
 }
 
 export function UpdateStatus(): $CancellablePromise<$models.UpdateInfo> {

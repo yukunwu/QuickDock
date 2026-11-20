@@ -54,8 +54,8 @@ it("online shortcuts only appear when no application matches and keep the origin
       .filter((r) => r.kind === "websearch" || r.kind === "translation")
       .map((r) => [r.kind, r.value]),
   ).toEqual([
-    ["websearch", "  Hello & 世界? "],
     ["translation", "  Hello & 世界? "],
+    ["websearch", "  Hello & 世界? "],
   ]);
   expect(
     searchEntries("", data).some(
@@ -241,4 +241,49 @@ it("exact names rank above aliases, strong alias matches rank above popularity, 
       ],
     }).filter((r) => r.kind === "app"),
   ).toEqual([]);
+});
+
+it("predicts time, calculation, translation or app search from the input", () => {
+  const kinds = (q: string) => searchEntries(q, data).map((r) => r.kind);
+  const lead = (q: string) => searchEntries(q, data)[0];
+  // Timestamps and dates convert; Enter copies the converted value.
+  expect(lead("1700000000").kind).toBe("time");
+  expect(lead("1700000000").value).toMatch(/^2023-11-1[45] /);
+  expect(lead("1700000000000").kind).toBe("time");
+  expect(lead("2026-11-16 09:30").value).toMatch(/^\d{10}$/);
+  expect(lead("2026-11-16").kind).toBe("time");
+  expect(
+    searchEntries("1700000000", data).find((r) => r.id === "timestamp"),
+  ).toMatchObject({ kind: "tool", value: "1700000000" });
+  // Phone numbers, short numbers and impossible dates are not timestamps.
+  expect(kinds("13800138000")).not.toContain("time");
+  expect(kinds("2023-02-30")).not.toContain("time");
+  // Arithmetic copies the result and offers the notebook with the expression.
+  expect(lead("(128 + 64) * 15%")).toMatchObject({
+    kind: "calculation",
+    value: "28.8",
+  });
+  expect(searchEntries("12*3", data)[1]).toMatchObject({
+    id: "calculator",
+    kind: "tool",
+    value: "12*3",
+  });
+  // Sentences lead with translation; names and short words keep app search.
+  expect(lead("how are you today").kind).toBe("translation");
+  expect(lead("今天天气怎么样呢").kind).toBe("translation");
+  expect(lead("你好，世界").kind).toBe("translation");
+  expect(lead("微信").kind).toBe("app");
+  expect(lead("weixin").kind).toBe("app");
+  expect(kinds("hello")[0]).toBe("websearch");
+  // Disabled tools never surface their intent.
+  const off = {
+    ...data,
+    settings: { ...data.settings, disabledTools: ["timestamp", "calculator"] },
+  };
+  expect(searchEntries("1700000000", off).map((r) => r.kind)).not.toContain(
+    "time",
+  );
+  expect(searchEntries("2+2", off).map((r) => r.kind)).not.toContain(
+    "calculation",
+  );
 });

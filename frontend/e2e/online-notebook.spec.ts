@@ -44,7 +44,7 @@ test("no-app-match entries search via default-browser bridge with exact query", 
   await page
     .locator(".launcher-shell")
     .screenshot({ path: "../docs/screenshots/08-online-shortcuts.png" });
-  await search.press("Enter");
+  await page.getByRole("option", { name: /Google 搜索/ }).click();
   const url = new URL(
     await page.evaluate(() => (window as unknown as { opened: string }).opened),
   );
@@ -131,51 +131,73 @@ test("notebook caret editing, selection and scrolled results stay on the same ro
   expect(positions.result).toBe(positions.editor);
   expect(positions.line).toBe(positions.resultLine);
 });
-test("notebook history survives reload, loads, deletes and clears without losing the draft", async ({
+test("notebook records automatically, loads, deletes and clears without losing the draft", async ({
   page,
 }) => {
   await notebook(page);
   const input = page.getByLabel("工具输入"),
-    output = page.getByLabel("工具结果");
+    output = page.getByLabel("工具结果"),
+    entries = page.locator(".history-list article");
   const source = "# 旅行预算\n1200 + 800\nans / 2";
   await input.fill(source);
-  await expect(output).toContainText("2000");
   await expect(output).toContainText("1000");
-  await page.getByRole("button", { name: "保存记录", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("已保存");
+  await expect(page.locator(".notebook-autosave")).toContainText("已自动记录");
+  // Continued editing updates the same record instead of adding new ones.
+  await input.fill(source + "\nans + 1");
+  await expect(page.locator(".notebook-autosave")).toContainText("已自动记录");
   await page.reload();
   await notebook(page);
   await page.getByRole("button", { name: /^历史记录/ }).click();
+  await expect(entries).toHaveCount(1);
   await page.getByRole("button", { name: "载入记录 # 旅行预算" }).click();
-  await expect(input).toHaveValue(source);
+  await expect(input).toHaveValue(source + "\nans + 1");
+  // Editing a loaded sheet keeps updating that record.
   await input.fill("# 咖啡预算\n28 * 22\nans * 12");
-  await page.getByRole("button", { name: "保存记录", exact: true }).click();
-  await expect(page.locator(".history-list article")).toHaveCount(2);
+  await expect(
+    page.getByRole("button", { name: "载入记录 # 咖啡预算" }),
+  ).toBeVisible();
+  await expect(entries).toHaveCount(1);
+  // A new sheet starts a new record.
+  await page.getByRole("button", { name: "新稿纸" }).click();
+  await input.fill("# 房租\n4500 / 3");
+  await expect(entries).toHaveCount(2);
   await page
     .locator(".app-shell")
     .screenshot({ path: "../docs/screenshots/10-calculation-notebook.png" });
-  await page.getByRole("button", { name: "删除记录 # 旅行预算" }).click();
-  await expect(page.locator(".history-list article")).toHaveCount(1);
+  await page.getByRole("button", { name: "删除记录 # 咖啡预算" }).click();
+  await expect(entries).toHaveCount(1);
   await page.getByRole("button", { name: "清空历史", exact: true }).click();
   await page.getByRole("button", { name: "确认清空历史" }).click();
-  await expect(page.locator(".history-list article")).toHaveCount(0);
-  await expect(input).toHaveValue("# 咖啡预算\n28 * 22\nans * 12");
+  await expect(entries).toHaveCount(0);
+  await expect(input).toHaveValue("# 房租\n4500 / 3");
+  // Invalid sheets are never recorded.
   await input.fill("1/0");
   await expect(output).toContainText("不能除以零");
-  await expect(
-    page.getByRole("button", { name: "保存记录", exact: true }),
-  ).toBeDisabled();
+  await page.waitForTimeout(2000);
+  await expect(entries).toHaveCount(0);
   await page.reload();
   await notebook(page);
   await page.getByRole("button", { name: /^历史记录/ }).click();
-  await expect(page.locator(".history-list article")).toHaveCount(0);
+  await expect(entries).toHaveCount(0);
+});
+test("Dock calculations copied with Enter join the notebook history", async ({
+  page,
+}) => {
+  const search = page.getByLabel("搜索应用和工具");
+  await search.fill("12*3+4");
+  await search.press("Enter");
+  await search.fill("jsq");
+  await page.getByRole("option", { name: /计算稿纸/ }).click();
+  await page.getByRole("button", { name: /^历史记录/ }).click();
+  await expect(
+    page.getByRole("button", { name: "载入记录 12*3+4" }),
+  ).toBeVisible();
 });
 test("notebook save failure leaves the current paper intact", async ({
   page,
 }) => {
   await notebook(page);
   const input = page.getByLabel("工具输入");
-  await input.fill("100*15%");
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
@@ -184,7 +206,37 @@ test("notebook save failure leaves the current paper intact", async ({
       original.call(this, key, value);
     };
   });
-  await page.getByRole("button", { name: "保存记录", exact: true }).click();
+  await input.fill("100*15%");
   await expect(page.getByRole("alert")).toContainText("QuotaExceededError");
   await expect(input).toHaveValue("100*15%");
+});
+test("translations are recorded, reloaded from history and deletable", async ({
+  page,
+}) => {
+  const search = page.getByLabel("搜索应用和工具");
+  for (const text of ["good morning everyone", "see you tomorrow then"]) {
+    await search.fill(text);
+    await page.getByRole("option", { name: /翻译「/ }).click();
+    await expect(page.getByLabel("Google网页翻译")).toBeVisible();
+    await page.keyboard.press("Escape");
+  }
+  await search.fill("how is the weather today");
+  await page.getByRole("option", { name: /翻译「/ }).click();
+  await page.getByRole("button", { name: /^历史/ }).click();
+  const entries = page.locator(".translation-history .history-list article");
+  await expect(entries).toHaveCount(3);
+  await expect(entries.first()).toContainText("how is the weather today");
+  await expect(entries.first()).toContainText("自动检测 → 简体中文");
+  await page
+    .getByRole("button", { name: "载入翻译 good morning everyone" })
+    .click();
+  await expect(search).toHaveValue("good morning everyone");
+  await expect(entries.first()).toContainText("good morning everyone");
+  await page
+    .getByRole("button", { name: "删除翻译 see you tomorrow then" })
+    .click();
+  await expect(entries).toHaveCount(2);
+  await page.getByRole("button", { name: "清空历史", exact: true }).click();
+  await page.getByRole("button", { name: "确认清空历史" }).click();
+  await expect(entries).toHaveCount(0);
 });

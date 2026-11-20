@@ -37,8 +37,13 @@ import {
 } from "./catalog";
 import * as bridge from "./bridge";
 import { searchEntries } from "./search";
+import { calculateSheet } from "./tools/notebook";
 import CompactLauncher from "./CompactLauncher";
-import { restoredView, reclaimHiddenSession } from "./toolSession";
+import {
+  restoredView,
+  reclaimHiddenSession,
+  seedToolInput,
+} from "./toolSession";
 const ToolWorkspace = lazy(() => import("./ToolWorkspace"));
 const SettingsPage = lazy(() => import("./SettingsPage"));
 const empty: Snapshot = {
@@ -228,6 +233,8 @@ export default function App() {
       } else if (r.kind === "translation") {
         setTranslationOpen(true);
       } else if (r.kind === "tool") {
+        // Intent rows carry the query so the tool opens on the same input.
+        if (r.value !== undefined) seedToolInput(r.id as ToolID, r.value);
         setTranslationOpen(false);
         setActiveTool(r.id as ToolID);
         await bridge.recordUsage(r.id);
@@ -235,7 +242,18 @@ export default function App() {
       else if (r.kind === "bookmark") await bridge.openBookmark(r.id);
       else {
         await bridge.copy(r.value || "");
-        notify(t("计算结果已复制"));
+        notify(r.kind === "time" ? t("已复制") : t("计算结果已复制"));
+        // Quick calculations join the notebook history as one-line sheets.
+        if (r.kind === "calculation") {
+          const expression = query.trim();
+          void bridge
+            .recordCalculation(
+              "",
+              expression,
+              calculateSheet(expression).map((l) => l.result),
+            )
+            .catch(() => {});
+        }
       }
       void load();
     } catch (e) {

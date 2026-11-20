@@ -9,6 +9,9 @@ import {
   CornerDownLeft,
   Command,
   ChevronDown,
+  Equal,
+  Clock3,
+  Languages,
 } from "lucide-react";
 import { type SearchResult, type Snapshot } from "./catalog";
 import { ItemIcon } from "./ItemIcon";
@@ -51,6 +54,17 @@ export default function CompactLauncher({
   const input = useRef<HTMLInputElement>(null);
   const composing = useRef(false);
   const searching = !!query.trim();
+  // The first result reflects the predicted intent; name it so Enter is
+  // never a surprise.
+  const lead = searching && !translationOpen ? results[0] : undefined;
+  const intent =
+    lead?.kind === "calculation"
+      ? { kind: "calculation", label: "计算", icon: Equal }
+      : lead?.kind === "time"
+        ? { kind: "time", label: "时间转换", icon: Clock3 }
+        : lead?.kind === "translation"
+          ? { kind: "translation", label: "翻译", icon: Languages }
+          : undefined;
   const visible = searching
     ? results
     : expanded
@@ -137,6 +151,12 @@ export default function CompactLauncher({
             }
           }}
         />
+        {intent && (
+          <span className={`search-intent ${intent.kind}`} role="status">
+            <intent.icon size={13} />
+            {t(intent.label)}
+          </span>
+        )}
         {query && (
           <button
             className="icon-button"
@@ -169,6 +189,7 @@ export default function CompactLauncher({
       {translationOpen ? (
         <DockTranslation
           query={query}
+          onPickQuery={setQuery}
           visible={windowVisible}
           back={closeTranslation}
           notify={notify}
@@ -229,7 +250,9 @@ export default function CompactLauncher({
                               ? t("搜索")
                               : r.kind === "translation"
                                 ? t("翻译")
-                                : t("复制")}
+                                : r.kind === "time"
+                                  ? t("时间")
+                                  : t("复制")}
                     </span>
                   )}
                   {searching && selected === i && <CornerDownLeft size={14} />}
@@ -257,7 +280,14 @@ export default function CompactLauncher({
             <LayoutGrid size={12} />
             {t("全部工具")}
           </button>
-          <kbd>{translationOpen ? t("↵ 翻译") : t("↵ 打开")}</kbd>
+          <kbd>
+            {translationOpen || visible[selected]?.kind === "translation"
+              ? t("↵ 翻译")
+              : visible[selected]?.kind === "calculation" ||
+                  visible[selected]?.kind === "time"
+                ? t("↵ 复制")
+                : t("↵ 打开")}
+          </kbd>
           <kbd>{translationOpen ? t("esc 返回") : t("esc 隐藏")}</kbd>
         </span>
       </footer>

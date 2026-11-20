@@ -7,6 +7,7 @@ export {
 };
 
 export type {
+    CalculationSaved,
     Snapshot,
     UpdateInfo
 } from "./models.js";

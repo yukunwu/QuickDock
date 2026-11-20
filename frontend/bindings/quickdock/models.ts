@@ -5,6 +5,11 @@
 // @ts-ignore: Unused imports
 import * as core$0 from "./internal/core/models.js";
 
+export interface CalculationSaved {
+    "id": string;
+    "records": core$0.Calculation[] | null;
+}
+
 export interface Snapshot {
     "apps": core$0.AppEntry[] | null;
     "settings": core$0.Settings;

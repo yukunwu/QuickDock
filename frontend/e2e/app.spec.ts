@@ -53,14 +53,30 @@ test("ten real tools and session state", async ({ page }) => {
   await tool(page, "URL 编解码");
   await input.fill("a+b c");
   await expect(out).toHaveText("a%2Bb%20c");
-  await tool(page, "时间戳转换");
-  await page.getByLabel("时区", { exact: true }).selectOption("utc");
-  await input.fill("0");
-  await expect(out).toHaveText("1970-01-01T00:00:00.000Z");
+  await tool(page, "时间与时区");
+  await page.getByLabel("时间输入").fill("0");
+  await expect(page.getByText("识别为：秒级时间戳")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^UTC 1970-01-01T00:00:00\.000Z/ }),
+  ).toBeVisible();
+  await page.getByLabel("时间输入").fill("2026-11-16 09:30");
+  await page.getByLabel("解析时区").selectOption("Asia/Shanghai");
+  await expect(
+    page.getByRole("button", { name: /^秒级时间戳 1794792600/ }),
+  ).toBeVisible();
   await tool(page, "UUID 生成");
-  await page.getByLabel("UUID 数量").fill("3");
-  await page.getByRole("button", { name: "生成 UUID v4" }).click();
-  await expect(out).toHaveText(/^[\da-f-]{36}\n[\da-f-]{36}\n[\da-f-]{36}$/);
+  await page.getByRole("button", { name: "5", exact: true }).click();
+  await expect(page.getByLabel("工具结果").getByRole("listitem")).toHaveCount(
+    5,
+  );
+  await page.getByRole("button", { name: "v7 按时间排序" }).click();
+  await expect(page.getByLabel("工具结果")).toContainText(
+    /[\da-f]{8}-[\da-f]{4}-7/,
+  );
+  await page.getByLabel("输出格式").selectOption("json");
+  await expect(page.getByLabel("工具结果")).toHaveText(
+    /^\[\n  "[\da-f-]{36}",/,
+  );
   await tool(page, "文本哈希");
   await input.fill("abc");
   await page.getByLabel("算法").selectOption("MD5");

@@ -855,6 +855,93 @@ html[data-runtime="preview"] .launcher-shell {
   }
 }
 
+/* Glass detail: a soft top sheen, hairline light edge and frosted selection.
+   The native window is masked to the same 14px radius in material_darwin.m. */
+:root {
+  --glass-sheen: rgba(255, 255, 255, 0.06);
+  --glass-edge: rgba(255, 255, 255, 0.12);
+  --glass-divider: rgba(255, 255, 255, 0.07);
+  --glass-fill: rgba(255, 255, 255, 0.09);
+  --glass-hover: rgba(255, 255, 255, 0.05);
+  --glass-footer: rgba(0, 0, 0, 0.12);
+}
+:root[data-theme="light"] {
+  --glass-sheen: rgba(255, 255, 255, 0.5);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --glass-divider: rgba(36, 37, 40, 0.08);
+  --glass-fill: rgba(255, 255, 255, 0.55);
+  --glass-hover: rgba(255, 255, 255, 0.32);
+  --glass-footer: rgba(255, 255, 255, 0.22);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --glass-sheen: rgba(255, 255, 255, 0.5);
+    --glass-edge: rgba(255, 255, 255, 0.7);
+    --glass-divider: rgba(36, 37, 40, 0.08);
+    --glass-fill: rgba(255, 255, 255, 0.55);
+    --glass-hover: rgba(255, 255, 255, 0.32);
+    --glass-footer: rgba(255, 255, 255, 0.22);
+  }
+}
+html[data-platform="mac"][data-runtime="native"] .launcher-shell,
+html[data-platform="mac"][data-runtime="native"] .app-shell {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+html[data-platform="mac"][data-runtime="native"] .compact-launcher,
+html[data-runtime="preview"] .compact-launcher {
+  background:
+    linear-gradient(180deg, var(--glass-sheen), transparent 72px),
+    var(--dock-material);
+}
+html[data-runtime="preview"] .launcher-shell {
+  border-color: var(--glass-edge);
+}
+html[data-runtime="preview"] .compact-launcher {
+  backdrop-filter: blur(28px) saturate(180%);
+}
+/* Without the native HUD layer, the preview tint stands in for its density. */
+html[data-runtime="preview"]:not([data-theme="light"]) {
+  --dock-material: rgba(34, 35, 38, 0.72);
+}
+@media (prefers-color-scheme: light) {
+  html[data-runtime="preview"]:not([data-theme="dark"]) {
+    --dock-material: rgba(248, 248, 250, 0.5);
+  }
+}
+html[data-runtime="preview"][data-theme="light"] {
+  --dock-material: rgba(248, 248, 250, 0.5);
+}
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .compact-search,
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .compact-warning {
+  border-bottom-color: var(--glass-divider);
+}
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .compact-footer {
+  border-top-color: var(--glass-divider);
+  background: var(--glass-footer);
+}
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .compact-footer kbd {
+  background: var(--glass-fill);
+}
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .recent-item.selected,
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .compact-result.selected {
+  background: var(--glass-fill);
+  box-shadow: inset 0 0 0 0.5px var(--glass-edge);
+}
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .recent-item:hover:not(.selected),
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .compact-result:hover:not(.selected),
+:is(html[data-platform="mac"][data-runtime="native"], html[data-runtime="preview"]) .compact-launcher .launcher-settings:hover {
+  background: var(--glass-hover);
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-platform="mac"][data-runtime="native"] .compact-launcher,
+  html[data-runtime="preview"] .compact-launcher {
+    background: var(--bg);
+    backdrop-filter: none;
+  }
+}
+
 /* QR codes stay black on white in both themes to preserve scan contrast. */
 .qr-grid { flex: 1; min-height: 0; }
 .qr-preview { display: flex; flex-direction: column; }
@@ -862,3 +949,482 @@ html[data-runtime="preview"] .launcher-shell {
 .qr-preview-body img { position: absolute; inset: 0; margin: auto; width: calc(100% - 32px); height: calc(100% - 32px); max-width: 280px; max-height: 280px; object-fit: contain; image-rendering: pixelated; border-radius: 3px; }
 .qr-empty { color: var(--muted); font-size: 14px; text-align: center; }
 .qr-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 12px 16px 20px; }
+
+/* Google translation: one slim toolbar, icon actions with tooltips. */
+.google-page-toolbar {
+  height: 52px;
+  padding: 8px 16px;
+  gap: 10px;
+}
+.google-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.google-target select {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.google-page-actions {
+  display: flex;
+  gap: 2px;
+}
+
+/* Shared row behaviour: whole row copies, the icon appears on hover. */
+.uuid-list button,
+.time-row,
+.time-zone-row,
+.currency-row {
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+  color: var(--text);
+}
+.uuid-list button:hover,
+.time-row:hover:not(:disabled),
+.time-zone-row:hover:not(:disabled),
+.currency-row:hover:not(:disabled) {
+  background: var(--hover);
+}
+.uuid-list button > .lucide,
+.time-row > .lucide {
+  color: var(--subtle);
+  opacity: 0;
+  transition: opacity 140ms var(--ease);
+}
+.uuid-list button:hover > .lucide,
+.uuid-list button:focus-visible > .lucide,
+.time-row:hover > .lucide,
+.time-row:focus-visible > .lucide {
+  opacity: 1;
+}
+
+/* UUID */
+.uuid-options-gap {
+  flex: 1;
+}
+.uuid-options .segmented button {
+  font-size: 12px;
+}
+.uuid-options input[type="number"] {
+  width: 72px;
+}
+.uuid-hero {
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 140ms var(--ease);
+}
+.uuid-hero:hover {
+  border-color: var(--accent);
+}
+.uuid-hero code {
+  font: 500 24px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  text-align: center;
+  padding: 0 24px;
+}
+.uuid-hero span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.uuid-list-pane {
+  flex: 1;
+  min-height: 0;
+}
+.uuid-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+}
+.uuid-list button {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  padding: 6px 10px;
+}
+.uuid-list code {
+  font: 13px/22px ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+.uuid-index {
+  font-size: 11px;
+  color: var(--subtle);
+}
+
+/* Time & time zones */
+.time-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 20px;
+}
+.time-input {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 14px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--muted);
+}
+.time-input:focus-within {
+  border-color: var(--accent);
+}
+.time-input.invalid,
+.currency-field.invalid {
+  border-color: var(--danger);
+}
+.time-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: 18px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text);
+}
+.time-input input:focus-visible,
+.currency-field input:focus-visible {
+  outline: none;
+}
+.time-input input::placeholder {
+  font: 14px -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.time-status,
+.currency-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  margin: 8px 2px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.time-status label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.time-status select {
+  font-size: 12px;
+  padding: 4px 8px;
+  max-width: 260px;
+}
+.time-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+.time-formats dl {
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+}
+.time-row {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.time-row dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.time-row dd {
+  margin: 0;
+  font: 13px/20px ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+.time-zones ul {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+.time-zones li {
+  position: relative;
+}
+.time-zone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 40px 8px 10px;
+}
+.time-zone-name,
+.time-zone-clock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.time-zone-clock {
+  align-items: flex-end;
+}
+.time-zone-name strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.time-zone-name small,
+.time-zone-clock small {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.time-zone-clock strong {
+  font: 500 20px/24px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.time-zone-clock em {
+  font-style: normal;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.time-zone-remove {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+}
+.time-zones li:hover .time-zone-remove,
+.time-zone-remove:focus-visible {
+  opacity: 1;
+}
+.time-zone-add {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.time-zone-add input {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+/* Currency */
+.currency-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 20px;
+}
+.currency-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  min-width: 0;
+}
+.currency-field:focus-within {
+  border-color: var(--accent);
+}
+.currency-field input,
+.currency-result {
+  border: 0;
+  background: none;
+  padding: 0;
+  min-width: 0;
+  font: 500 28px/36px -apple-system, BlinkMacSystemFont, sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.currency-result {
+  display: block;
+  width: 100%;
+  color: var(--accent);
+}
+.currency-field select {
+  align-self: flex-start;
+  max-width: 100%;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.currency-swap {
+  align-self: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--panel);
+}
+.currency-table {
+  flex: 1;
+  min-height: 0;
+}
+.currency-table ul {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 2px 12px;
+}
+.currency-table li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.currency-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  min-width: 0;
+}
+.currency-code {
+  grid-row: span 2;
+  font: 600 13px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.currency-name {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.currency-row strong {
+  grid-row: span 2;
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.currency-row small {
+  font-size: 10px;
+  color: var(--subtle);
+}
+.currency-empty {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.currency-note {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .time-grid,
+  .currency-table ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Search intent: names what Enter will do before the user presses it. */
+.search-intent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.search-intent.calculation {
+  background: #f2906220;
+  color: #d9773f;
+}
+.search-intent.translation {
+  background: #a77bf020;
+  color: #9a6ce0;
+}
+
+/* Translation history sits beside the page; the native view follows the
+   content rect, so the panel simply narrows it. */
+.google-page-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.google-page-body .google-page-content {
+  flex: 1;
+  min-width: 0;
+}
+.translation-history {
+  width: 248px;
+  padding: 12px 12px 12px 14px;
+}
+.translation-history .history-load strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+.translation-history .history-load span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+.google-page-toolbar .secondary.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.notebook-autosave {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.notebook-autosave .lucide {
+  color: var(--success);
+}
+/* Preview mirrors the native window, which grows to 520px for translation. */
+.compact-desktop:has(.google-page-shell) .launcher-shell {
+  height: 520px;
+}
+.compact-launcher .translation-history > p {
+  display: none;
+}
+.compact-launcher .translation-history .history-heading {
+  margin-bottom: 8px;
+}

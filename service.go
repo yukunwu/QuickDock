@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -27,37 +28,41 @@ type shortcutRegistry interface {
 	IsRegistered(string) bool
 }
 type Service struct {
-	localizedMenu   map[string]*application.MenuItem
-	uiLanguage      string
-	updates         updateState
-	shortcuts       shortcutRegistry
-	mu              sync.Mutex
-	saveMu          sync.Mutex
-	historyMu       sync.Mutex
-	toolMu          sync.Mutex
-	toolWindows     map[string]*toolWindow
-	toolQuitPending map[string]bool
-	toolQuitAllowed bool
-	state           core.State
-	apps            []core.AppEntry
-	dir             string
-	indexing        bool
-	indexPending    bool
-	scanApps        func() ([]core.AppEntry, error)
-	indexMonitor    *appIndexMonitor
-	indexError      string
-	warning         string
-	shortcutError   string
-	loadError       error
-	editing         bool
-	app             *application.App
-	window          *application.WebviewWindow
-	idleRelease     *time.Timer
+	localizedMenu map[string]*application.MenuItem
+	uiLanguage    string
+	updates       updateState
+	shortcuts     shortcutRegistry
+	mu            sync.Mutex
+	saveMu        sync.Mutex
+	historyMu     sync.Mutex
+	toolMu        sync.Mutex
+	ratesMu       sync.Mutex
+	// Windows whose next Google page load follows an explicit submit.
+	translationSubmits map[string]bool
+	fetchRates         func(context.Context) (core.Rates, error)
+	toolWindows        map[string]*toolWindow
+	toolQuitPending    map[string]bool
+	toolQuitAllowed    bool
+	state              core.State
+	apps               []core.AppEntry
+	dir                string
+	indexing           bool
+	indexPending       bool
+	scanApps           func() ([]core.AppEntry, error)
+	indexMonitor       *appIndexMonitor
+	indexError         string
+	warning            string
+	shortcutError      string
+	loadError          error
+	editing            bool
+	app                *application.App
+	window             *application.WebviewWindow
+	idleRelease        *time.Timer
 }
 
 func newService(dir string) *Service {
 	state, warning, err := core.Load(filepath.Join(dir, "settings.json"))
-	s := &Service{toolWindows: map[string]*toolWindow{}, state: state, dir: dir, warning: warning, loadError: err, apps: []core.AppEntry{}}
+	s := &Service{toolWindows: map[string]*toolWindow{}, translationSubmits: map[string]bool{}, state: state, dir: dir, warning: warning, loadError: err, apps: []core.AppEntry{}}
 	if err != nil {
 		s.warning = err.Error()
 	}
@@ -135,6 +140,9 @@ func (s *Service) SaveSettings(next core.Settings) (core.Settings, error) {
 	}
 	if s.app != nil {
 		s.SyncUILanguage(s.locale())
+	}
+	if s.window != nil && next.Theme != old.Theme {
+		application.InvokeSync(func() { platform.SetMaterialTheme(s.window.NativeWindow(), next.Theme) })
 	}
 	return next, nil
 }

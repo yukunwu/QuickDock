@@ -24,6 +24,15 @@ export interface Calculation {
     "results": string[] | null;
 }
 
+export interface Rates {
+    "base": string;
+    "date": string;
+    "rates": { [_ in string]?: number } | null;
+    "fetchedAt": number;
+    "stale"?: boolean;
+    "error"?: string;
+}
+
 export interface Settings {
     "version": number;
     "language"?: string;
@@ -49,6 +58,19 @@ export interface Translation {
     "text": string;
     "detected": string;
     "validationVersion"?: number;
+}
+
+/**
+ * TranslationRecord is one remembered Google page translation. Result is
+ * best-effort text read from the page and may be empty.
+ */
+export interface TranslationRecord {
+    "id": string;
+    "createdAt": number;
+    "text": string;
+    "source": string;
+    "target": string;
+    "result": string;
 }
 
 export interface Usage {

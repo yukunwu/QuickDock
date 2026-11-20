@@ -3,10 +3,10 @@ import { commandLabel } from "./platform";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  Check,
   Copy,
   History,
   NotebookPen,
-  Save,
   Trash2,
   X,
 } from "lucide-react";
@@ -26,6 +26,12 @@ export default function CalculatorNotebook({
   const [source, setSource] = useState(
     () => drafts.get("calculator")?.input ?? example(),
   );
+  // Autosave: one history record per sheet. The record id rides in the
+  // session draft so leaving and returning keeps updating the same record;
+  // the baseline is text that needs no recording (initial or just loaded).
+  const sessionId = useRef(drafts.get("calculator")?.generated || "");
+  const baseline = useRef(source);
+  const [savedAt, setSavedAt] = useState(0);
   const [records, setRecords] = useState<Calculation[]>([]),
     [historyOpen, setHistoryOpen] = useState(false),
     [busy, setBusy] = useState(false),
@@ -34,8 +40,9 @@ export default function CalculatorNotebook({
   const outputRef = useRef<HTMLDivElement>(null);
   const lines = useMemo(() => calculateSheet(source), [source]);
   const valid = lines.some((l) => l.result) && !lines.some((l) => l.error);
-  const remember = (value: string) => {
+  const remember = (value: string, id = sessionId.current) => {
     setSource(value);
+    sessionId.current = id;
     drafts.set("calculator", {
       input: value,
       mode: "encode",
@@ -45,7 +52,7 @@ export default function CalculatorNotebook({
       from: "米 m",
       to: "千米 km",
       count: 1,
-      generated: "",
+      generated: id,
     });
   };
   useEffect(() => {
@@ -62,23 +69,54 @@ export default function CalculatorNotebook({
       active = false;
     };
   }, []);
-  const save = async () => {
-    if (busy || !valid) return;
-    setBusy(true);
-    setError("");
-    try {
-      setRecords(
-        await bridge.saveCalculation(
+  const latest = useRef({ source, lines, valid });
+  latest.current = { source, lines, valid };
+  const queue = useRef(Promise.resolve());
+  const record = () => {
+    const { source, lines, valid } = latest.current;
+    if (!valid || source === baseline.current) return queue.current;
+    baseline.current = source;
+    // Serialize writes so a fast edit never races its predecessor's id.
+    queue.current = queue.current.then(async () => {
+      try {
+        const saved = await bridge.recordCalculation(
+          sessionId.current,
           source,
           lines.map((l) => l.result),
-        ),
-      );
-      notify(t("已保存到计算历史"));
-    } catch (e) {
-      setError(errorText(e));
-    } finally {
-      setBusy(false);
-    }
+        );
+        if (latest.current.source === source) remember(source, saved.id);
+        else sessionId.current = saved.id;
+        setRecords(saved.records);
+        setSavedAt(Date.now());
+        setError("");
+      } catch (e) {
+        baseline.current = "";
+        setError(errorText(e));
+      }
+    });
+    return queue.current;
+  };
+  useEffect(() => {
+    if (!valid || source === baseline.current) return;
+    const timer = setTimeout(() => void record(), 1500);
+    return () => clearTimeout(timer);
+  }, [source, valid]);
+  // Leaving the notebook (back, Dock hidden, window closed) records at once.
+  useEffect(() => {
+    const flush = () => void record();
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("quickdock-visibility", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("quickdock-visibility", flush);
+      flush();
+    };
+  }, []);
+  const startSheet = async (value: string, id: string) => {
+    await record();
+    baseline.current = value;
+    remember(value, id);
+    setSavedAt(0);
   };
   const remove = async (id?: string) => {
     setBusy(true);
@@ -89,6 +127,13 @@ export default function CalculatorNotebook({
         await bridge.clearCalculations();
         setRecords([]);
         setConfirmClear(false);
+      }
+      // Deleting the current sheet's record stops recording it until it
+      // changes again; later edits then start a new record.
+      if (!id || id === sessionId.current) {
+        baseline.current = latest.current.source;
+        remember(latest.current.source, "");
+        setSavedAt(0);
       }
     } catch (e) {
       setError(errorText(e));
@@ -121,19 +166,26 @@ export default function CalculatorNotebook({
           <History size={15} />
           {t("历史记录")} {records.length}
         </button>
-        <button
-          className="primary"
-          disabled={busy || !valid}
-          onClick={() => void save()}
-        >
-          <Save size={15} />
-          {t("保存记录")}
-        </button>
+        <span className="notebook-autosave" aria-live="polite">
+          {savedAt ? (
+            <>
+              <Check size={13} />
+              {t("已自动记录 {time}", {
+                time: new Date(savedAt).toLocaleTimeString(getLanguage(), {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              })}
+            </>
+          ) : valid && source !== baseline.current ? (
+            t("编辑后自动记录")
+          ) : null}
+        </span>
       </div>
       <div className="workspace-options">
         <span className="tag">{t("本地计算")}</span>
         <span>{t("一行一个算式 · # 备注 · ans 上一个结果")}</span>
-        <button className="secondary" onClick={() => remember("")}>
+        <button className="secondary" onClick={() => void startSheet("", "")}>
           {t("新稿纸")}
         </button>
         <button
@@ -168,7 +220,7 @@ export default function CalculatorNotebook({
             <span>
               {t("稿纸")}{" "}
               <small>
-                {commandLabel} {t("Enter 保存记录")}
+                {commandLabel} {t("Enter 立即记录")}
               </small>
             </span>
             <span>{t("计算结果")}</span>
@@ -194,7 +246,8 @@ export default function CalculatorNotebook({
                   e.key === "Enter"
                 ) {
                   e.preventDefault();
-                  void save();
+                  if (valid)
+                    void record().then(() => notify(t("已记录到历史")));
                 }
               }}
             />
@@ -227,13 +280,13 @@ export default function CalculatorNotebook({
                 <X size={15} />
               </button>
             </div>
-            <p>{t("保存在本机 · 最近100份")}</p>
+            <p>{t("自动记录在本机 · 最近100份")}</p>
             <div className="history-list">
               {!records.length ? (
                 <div className="empty">
                   {t("还没有记录")}
                   <br />
-                  {t("保存一张稿纸，从这里继续。")}
+                  {t("写下算式，停顿片刻会自动记录。")}
                 </div>
               ) : (
                 records.map((record) => (
@@ -243,10 +296,11 @@ export default function CalculatorNotebook({
                       aria-label={t("载入记录 {name}", {
                         name: record.source.split("\n")[0],
                       })}
-                      onClick={() => {
-                        remember(record.source);
-                        notify(t("已载入稿纸"));
-                      }}
+                      onClick={() =>
+                        void startSheet(record.source, record.id).then(() =>
+                          notify(t("已载入稿纸")),
+                        )
+                      }
                     >
                       <time>
                         {new Date(record.createdAt).toLocaleString(
@@ -318,8 +372,8 @@ export default function CalculatorNotebook({
         {t("/ 20000 字符")}
         <span>
           {new URLSearchParams(location.search).has("tool")
-            ? t("独立窗口自动保存稿纸；保存记录可另外保留历史版本。")
-            : t("保存的历史重启后保留，未保存稿纸仅保留本次会话。")}
+            ? t("独立窗口自动保存稿纸，并自动记录到历史。")
+            : t("稿纸自动记录到历史，重启后仍可载入。")}
         </span>
       </div>
     </section>

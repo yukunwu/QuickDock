@@ -134,6 +134,10 @@ var gtkGoogleCallback = purego.NewCallback(func(manager, result, data uintptr) {
 		}
 		return
 	}
+	if action.Action == "history" {
+		googleHistory(data, text)
+		return
+	}
 	var state googleState
 	if len(text) < 100*1024 && json.Unmarshal([]byte(text), &state) == nil && validGoogleState(state) {
 		page.state = state
@@ -141,7 +145,8 @@ var gtkGoogleCallback = purego.NewCallback(func(manager, result, data uintptr) {
 	}
 })
 
-func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) error {
+func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func(), onHistory func(string)) error {
+	setGoogleHistory(window, onHistory)
 	if err := loadGtkGoogle(); err != nil {
 		return errors.New("Google网页需要WebKitGTK 4.1：" + err.Error())
 	}
@@ -176,7 +181,7 @@ func AttachGooglePage(window unsafe.Pointer, path, raw string, onEscape func()) 
 		linuxGooglePages[parent] = page
 		gtkGoogle.registerMessage(manager, "quickdockGoogleDraft")
 		page.signal = gtkGoogle.connect(manager, "script-message-received::quickdockGoogleDraft", gtkGoogleCallback, parent, 0, 0)
-		script := gtkGoogle.scriptNew(strings.ReplaceAll(googleDraftScript, "QD_SEND", "window.webkit.messageHandlers.quickdockGoogleDraft.postMessage"), 1, 1, 0, 0)
+		script := gtkGoogle.scriptNew(strings.ReplaceAll(googleDraftScript+googleHistoryScript, "QD_SEND", "window.webkit.messageHandlers.quickdockGoogleDraft.postMessage"), 1, 1, 0, 0)
 		gtkGoogle.addScript(manager, script)
 		gtkGoogle.unrefScript(script)
 		gtkGoogle.load(view, googleURL(page.state))
@@ -217,6 +222,7 @@ func DetachGooglePage(window unsafe.Pointer) {
 	gtkGoogle.unref(page.container)
 	gtkGoogle.unref(page.manager)
 	delete(linuxGooglePages, parent)
+	setGoogleHistory(window, nil)
 }
 func FlushGooglePage(window unsafe.Pointer) {
 	if p := linuxGooglePages[uintptr(window)]; p != nil {

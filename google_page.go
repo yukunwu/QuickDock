@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"quickdock/internal/core"
+	"quickdock/internal/i18n"
 	"quickdock/internal/platform"
 )
 
@@ -48,13 +49,19 @@ func (s *Service) GoogleTranslationPage(windowID, text, source, target, action s
 		application.InvokeSync(func() { platform.FlushGooglePage(w.NativeWindow()) })
 		return nil
 	}
-	if action != "attach" && action != "submit" && action != "reload" && action != "layout" && action != "browser" {
+	if action != "attach" && action != "submit" && action != "reload" && action != "layout" && action != "browser" && action != "focus" {
 		return errors.New("未知翻译页面操作")
 	}
-	options, _ := json.Marshal(map[string]any{"text": text, "source": source, "target": target, "submit": action == "submit", "reload": action == "reload", "rect": rect, "browser": action == "browser"})
+	if action == "submit" {
+		s.mu.Lock()
+		s.translationSubmits[windowID] = true
+		s.mu.Unlock()
+	}
+	options, _ := json.Marshal(map[string]any{"text": text, "source": source, "target": target, "submit": action == "submit", "reload": action == "reload", "rect": rect, "browser": action == "browser", "focus": action == "focus",
+		"loading": i18n.T(s.locale(), "正在加载 Google 翻译网页…"), "failed": i18n.T(s.locale(), "Google 翻译网页加载失败，请检查网络后点击重新加载")})
 	return application.InvokeSyncWithError(func() error {
 		return platform.AttachGooglePage(w.NativeWindow(), path, string(options), func() {
 			w.ExecJS(`window.dispatchEvent(new Event("quickdock-escape"))`)
-		})
+		}, func(raw string) { go s.recordTranslation(windowID, raw) })
 	})
 }

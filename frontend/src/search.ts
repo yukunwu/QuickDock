@@ -9,7 +9,21 @@ import {
   type Snapshot,
   type SearchResult,
 } from "./catalog";
-import { Globe, Equal, Search, Languages } from "lucide-react";
+import {
+  Globe,
+  Equal,
+  Search,
+  Languages,
+  Clock3,
+  NotebookPen,
+} from "lucide-react";
+import {
+  formatZoned,
+  localZone,
+  offsetLabel,
+  parseTime,
+  zoneOffset,
+} from "./tools/time";
 type SearchTerms = {
   literal: string;
   compact: string;
@@ -88,6 +102,37 @@ function nameScore(name: string, q: string, joined: string, alias = false) {
         : 48
       : 0,
   );
+}
+export type Intent = "app" | "calculation" | "time" | "translation";
+// A date with a 4-digit year, a plausible Unix timestamp (1973–2286 in
+// seconds, or milliseconds), or "now". 11-digit phone numbers never match.
+const timeLike =
+  /^(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}(?:[T ]\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})?)?|\d{9,10}(?:\.\d{1,3})?|\d{12,13}|now|现在)$/i;
+const cjk =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
+// Sentences rather than names: several words, sentence punctuation, or a
+// longer run of CJK text.
+export function looksLikeText(query: string) {
+  const text = query.trim();
+  const words = text.split(/\s+/).filter((w) => /\p{L}/u.test(w));
+  const punctuated = /[.,!?;:"'，。！？；：、「」“”]/.test(text);
+  const cjkCount = text.match(cjk)?.length || 0;
+  if (cjkCount) return cjkCount >= 6 || (cjkCount >= 2 && punctuated);
+  return words.length >= 3 || (words.length >= 2 && punctuated);
+}
+export function detectIntent(query: string, bestNameScore: number): Intent {
+  const text = query.trim();
+  if (!text) return "app";
+  // A strong name match wins unless the text is unmistakably data.
+  if (
+    timeLike.test(text) &&
+    !(bestNameScore >= 60 && /^(now|现在)$/i.test(text))
+  )
+    return "time";
+  if (/[+*/%()−×÷^-]/.test(text) && /\d/.test(text) && !/\p{L}{2,}/u.test(text))
+    return "calculation";
+  if (bestNameScore < 60 && looksLikeText(text)) return "translation";
+  return "app";
 }
 export function searchEntries(query: string, data: Snapshot): SearchResult[] {
   const q = fold(query.trim());
@@ -169,12 +214,25 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
           : 0;
     return Math.max(direct, alternate);
   };
+  const ranked = entries
+    .map((r, i) => ({ r, s: score(r), i }))
+    .filter((e) => e.s > 0)
+    .sort(
+      (a, b) =>
+        b.s - a.s ||
+        (data.usage[b.r.id]?.lastUsed || 0) -
+          (data.usage[a.r.id]?.lastUsed || 0) ||
+        (data.usage[b.r.id]?.count || 0) - (data.usage[a.r.id]?.count || 0) ||
+        a.i - b.i,
+    );
+  const best = Math.max(
+    0,
+    ...ranked.filter((e) => e.r.kind !== "tool").map((e) => e.s),
+  );
+  const intent = detectIntent(query, best);
+  const enabled = (id: string) => !data.settings.disabledTools.includes(id);
   let calculation: SearchResult[] = [];
-  if (
-    q &&
-    /[+*/%()−×÷-]/.test(q) &&
-    !data.settings.disabledTools.includes("calculator")
-  ) {
+  if (q && intent === "calculation" && enabled("calculator")) {
     try {
       const value = calculate(q);
       calculation = [
@@ -187,29 +245,81 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
           color: "orange",
           value,
         },
+        {
+          id: "calculator",
+          title: t("在计算稿纸中继续"),
+          subtitle: t("带入算式，多行计算并保存历史"),
+          kind: "tool",
+          icon: NotebookPen,
+          color: "orange",
+          value: query.trim(),
+        },
       ];
     } catch {
       /* Search text is not necessarily an expression. */
     }
   }
+  let time: SearchResult[] = [];
+  if (intent === "time" && enabled("timestamp")) {
+    try {
+      const parsed = parseTime(query, "local");
+      if (parsed) {
+        const ms = parsed.ms;
+        const zone = `${localZone()} · ${offsetLabel(zoneOffset(ms, "local"))}`;
+        const date = formatZoned(ms, "local", ms % 1000 !== 0);
+        const seconds = String(Math.floor(ms / 1000));
+        const toDate =
+          parsed.kind === "seconds" || parsed.kind === "milliseconds";
+        const rows: [string, string, string][] = toDate
+          ? [
+              [date, t("本地时间 · {zone}", { zone }), date],
+              [
+                new Date(ms).toISOString(),
+                "UTC · ISO 8601",
+                new Date(ms).toISOString(),
+              ],
+            ]
+          : [
+              [seconds, t("秒级时间戳 · 按本地时区 {zone}", { zone }), seconds],
+              [String(ms), t("毫秒级时间戳"), String(ms)],
+            ];
+        time = [
+          ...rows.map(([title, subtitle, value], i) => ({
+            id: `time-${i}`,
+            title,
+            subtitle,
+            kind: "time" as const,
+            icon: Clock3,
+            color: "blue",
+            value,
+          })),
+          {
+            id: "timestamp",
+            title: t("在时间与时区中打开"),
+            subtitle: t("查看全部格式与世界时钟"),
+            kind: "tool",
+            icon: Clock3,
+            color: "blue",
+            value: query.trim(),
+          },
+        ];
+      }
+    } catch {
+      /* Invalid dates fall back to normal search. */
+    }
+  }
   const matched: SearchResult[] = [
+    ...time,
     ...calculation,
-    ...entries
-      .map((r, i) => ({ r, s: score(r), i }))
-      .filter((e) => e.s > 0)
-      .sort(
-        (a, b) =>
-          b.s - a.s ||
-          (data.usage[b.r.id]?.lastUsed || 0) -
-            (data.usage[a.r.id]?.lastUsed || 0) ||
-          (data.usage[b.r.id]?.count || 0) - (data.usage[a.r.id]?.count || 0) ||
-          a.i - b.i,
-      )
-      .map((e) => e.r),
+    ...ranked.map((e) => e.r),
   ];
-  if (q && !matched.some((r) => r.kind === "app")) {
-    if (!data.settings.disabledTools.includes("google"))
-      matched.push({
+  const online: SearchResult[] = [];
+  if (
+    q &&
+    (intent === "translation" || !matched.some((r) => r.kind === "app"))
+  ) {
+    if (enabled("google"))
+      online.push({
         id: "google",
         kind: "websearch",
         title: t("Google 搜索「{query}」", { query }),
@@ -218,8 +328,8 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
         color: "blue",
         value: query,
       });
-    if (!data.settings.disabledTools.includes("translate"))
-      matched.push({
+    if (enabled("translate")) {
+      const translation: SearchResult = {
         id: "translate",
         kind: "translation",
         title: t("翻译「{query}」", { query }),
@@ -227,7 +337,13 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
         icon: Languages,
         color: "purple",
         value: query,
-      });
+      };
+      // Text that reads like a sentence leads with translation.
+      if (intent === "translation") online.unshift(translation);
+      else online.push(translation);
+    }
   }
+  if (intent === "translation") return [...online, ...matched];
+  matched.push(...online);
   return matched;
 }

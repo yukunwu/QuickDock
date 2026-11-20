@@ -1,3 +1,4 @@
+import { parseRates, ratesURL, type Rates } from "./tools/currency";
 import {
   defaults,
   previewApps,
@@ -131,6 +132,43 @@ export async function translate(
   if (raw.length > 1024 * 1024) throw Error("翻译响应异常");
   return parseTranslation(JSON.parse(raw), source, provider, text, target);
 }
+// Concurrent opens share one download, mirroring the native mutex.
+let ratesRequest: Promise<Rates> | null = null;
+export function exchangeRates(refresh = false): Promise<Rates> {
+  if (!ratesRequest)
+    ratesRequest = loadRates(refresh).finally(() => {
+      ratesRequest = null;
+    });
+  return ratesRequest;
+}
+async function loadRates(refresh: boolean): Promise<Rates> {
+  if (native) return (await backend()).ExchangeRates(refresh) as Promise<Rates>;
+  const key = "quickdock-preview-rates";
+  let cached: Rates | undefined;
+  try {
+    cached = JSON.parse(localStorage.getItem(key) || "null") || undefined;
+  } catch {
+    cached = undefined;
+  }
+  if (cached && !refresh && Date.now() - cached.fetchedAt < 6 * 3600 * 1000)
+    return cached;
+  try {
+    const response = await fetch(ratesURL, {
+      signal: AbortSignal.timeout(15000),
+      credentials: "omit",
+      referrerPolicy: "no-referrer",
+    });
+    if (!response.ok) throw Error("汇率服务暂不可用，请稍后重试");
+    const rates = parseRates(await response.json());
+    localStorage.setItem(key, JSON.stringify(rates));
+    return rates;
+  } catch (e) {
+    if (!cached) throw e;
+    return { ...cached, stale: true, error: errorMessage(e) };
+  }
+}
+const errorMessage = (e: unknown) =>
+  e instanceof Error ? e.message : String(e);
 const historyKey = "quickdock-preview-calculations";
 export async function calculations(): Promise<Calculation[]> {
   if (native) return (await backend()).Calculations();
@@ -152,25 +190,35 @@ export async function calculations(): Promise<Calculation[]> {
     throw Error("计算历史损坏或版本不支持，已保留原数据");
   return state.records;
 }
-export async function saveCalculation(
+// Autosave the sheet being edited: the same id updates one record.
+export async function recordCalculation(
+  id: string,
   source: string,
   results: string[],
-): Promise<Calculation[]> {
-  if (native) return (await backend()).SaveCalculation(source, results);
+): Promise<{ id: string; records: Calculation[] }> {
+  if (native) return (await backend()).RecordCalculation(id, source, results);
   const lines = calculateSheet(source);
   if (!lines.some((l) => l.result) || lines.some((l) => l.error))
     throw Error("请修正所有算式后保存");
   const records = await calculations();
-  if (records[0]?.source === source) return records;
-  const next = [
-    { id: crypto.randomUUID(), createdAt: Date.now(), source, results },
-    ...records,
-  ].slice(0, 100);
+  const same = (r: Calculation) =>
+    r.source === source && r.results.join("\n") === results.join("\n");
+  const index = id ? records.findIndex((r) => r.id === id) : -1;
+  if (index < 0 && records[0] && same(records[0]))
+    return { id: records[0].id, records };
+  if (index >= 0 && same(records[index])) return { id, records };
+  const record = {
+    id: index >= 0 ? id : crypto.randomUUID(),
+    createdAt: Date.now(),
+    source,
+    results,
+  };
+  const next = [record, ...records.filter((_, i) => i !== index)].slice(0, 100);
   localStorage.setItem(
     historyKey,
     JSON.stringify({ version: 1, records: next }),
   );
-  return next;
+  return { id: record.id, records: next };
 }
 export async function deleteCalculation(id: string): Promise<Calculation[]> {
   if (native) return (await backend()).DeleteCalculation(id);
@@ -187,6 +235,72 @@ export async function clearCalculations() {
   localStorage.setItem(historyKey, JSON.stringify({ version: 1, records: [] }));
 }
 
+export type TranslationRecord = {
+  id: string;
+  createdAt: number;
+  text: string;
+  source: string;
+  target: string;
+  result: string;
+};
+const translationKey = "quickdock-preview-translations";
+function previewTranslations(): TranslationRecord[] {
+  try {
+    const state = JSON.parse(localStorage.getItem(translationKey) || "null");
+    return state?.version === 1 && Array.isArray(state.records)
+      ? state.records
+      : [];
+  } catch {
+    return [];
+  }
+}
+function storePreviewTranslations(records: TranslationRecord[]) {
+  localStorage.setItem(
+    translationKey,
+    JSON.stringify({ version: 1, records: records.slice(0, 200) }),
+  );
+  window.dispatchEvent(new Event("quickdock-translation-history"));
+}
+export async function translationHistory(): Promise<TranslationRecord[]> {
+  if (native) return (await (await backend()).TranslationHistory()) || [];
+  return previewTranslations();
+}
+export async function deleteTranslation(
+  id: string,
+): Promise<TranslationRecord[]> {
+  if (native) return (await (await backend()).DeleteTranslation(id)) || [];
+  const next = previewTranslations().filter((r) => r.id !== id);
+  storePreviewTranslations(next);
+  return next;
+}
+export async function clearTranslations() {
+  if (native) return (await backend()).ClearTranslations();
+  storePreviewTranslations([]);
+}
+// The browser preview has no Google page; it records explicit submissions so
+// the history panel can be exercised. Native pages report through Go.
+function previewRecordTranslation(
+  text: string,
+  source: string,
+  target: string,
+) {
+  const value = text.trim();
+  if (!value) return;
+  const rest = previewTranslations().filter(
+    (r) => !(r.text === value && r.target === target),
+  );
+  storePreviewTranslations([
+    {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      text: value,
+      source,
+      target,
+      result: "",
+    },
+    ...rest,
+  ]);
+}
 const popupWindows = new Map<string, Window>();
 export async function openToolWindow(
   id: import("./catalog").ToolID,
@@ -263,6 +377,7 @@ export async function googleTranslationPage(
       action,
       rect,
     );
+  if (action === "submit") previewRecordTranslation(text, source, target);
   window.dispatchEvent(
     new CustomEvent("quickdock-google-page", {
       detail: { windowID, text, source, target, action },
