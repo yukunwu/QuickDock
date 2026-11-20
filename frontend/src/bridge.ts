@@ -47,6 +47,10 @@ export async function launch(id: string): Promise<void> {
   if (native) return (await backend()).Launch(id);
   throw new Error("浏览器预览不能启动本机应用，请在 QuickDock 桌面版中使用。");
 }
+export async function revealApp(id: string): Promise<void> {
+  if (native) return (await backend()).RevealApp(id);
+  throw new Error("浏览器预览不能启动本机应用，请在 QuickDock 桌面版中使用。");
+}
 export async function openBookmark(id: string, query = ""): Promise<void> {
   if (native) return (await backend()).OpenBookmark(id, query);
   const b = demoSettings.bookmarks.find((b) => b.id === id);

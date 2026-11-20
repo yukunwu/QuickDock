@@ -523,7 +523,13 @@
     "网址中的 {query} 会替换为搜索词：设置别名 gh 后，在 Dock 输入「gh 关键词」即可直接搜索。": "{query} in a URL is replaced by your search terms: with the alias gh, type “gh terms” in the Dock to search directly.",
     "常用搜索": "Search presets",
     "百度": "Baidu",
-    "哔哩哔哩": "Bilibili"
+    "哔哩哔哩": "Bilibili",
+    "↵ 在访达中显示": "↵ Show in Finder",
+    "↵ 显示文件位置": "↵ Show file location",
+    "↵ 复制网址": "↵ Copy URL",
+    "网址已复制": "URL copied",
+    "无法在文件管理器中显示": "Couldn't show it in the file manager",
+    "该应用没有可显示的文件位置": "This app has no file location to show"
   },
   "ja": {
     "偏好设置": "環境設定",
@@ -1049,7 +1055,13 @@
     "网址中的 {query} 会替换为搜索词：设置别名 gh 后，在 Dock 输入「gh 关键词」即可直接搜索。": "URL 内の {query} は検索語に置き換わります。別名 gh を設定すると、Dock で「gh キーワード」と入力して直接検索できます。",
     "常用搜索": "よく使う検索",
     "百度": "Baidu",
-    "哔哩哔哩": "bilibili"
+    "哔哩哔哩": "bilibili",
+    "↵ 在访达中显示": "↵ Finder に表示",
+    "↵ 显示文件位置": "↵ ファイルの場所を表示",
+    "↵ 复制网址": "↵ URL をコピー",
+    "网址已复制": "URL をコピーしました",
+    "无法在文件管理器中显示": "ファイルマネージャで表示できません",
+    "该应用没有可显示的文件位置": "このアプリには表示できるファイルの場所がありません"
   },
   "zh-TW": {
     "偏好设置": "偏好設定",
@@ -1575,7 +1587,13 @@
     "网址中的 {query} 会替换为搜索词：设置别名 gh 后，在 Dock 输入「gh 关键词」即可直接搜索。": "網址中的 {query} 會替換為搜尋詞：設定別名 gh 後，在 Dock 輸入「gh 關鍵字」即可直接搜尋。",
     "常用搜索": "常用搜尋",
     "百度": "百度",
-    "哔哩哔哩": "嗶哩嗶哩"
+    "哔哩哔哩": "嗶哩嗶哩",
+    "↵ 在访达中显示": "↵ 在 Finder 中顯示",
+    "↵ 显示文件位置": "↵ 顯示檔案位置",
+    "↵ 复制网址": "↵ 複製網址",
+    "网址已复制": "網址已複製",
+    "无法在文件管理器中显示": "無法在檔案管理器中顯示",
+    "该应用没有可显示的文件位置": "此 App 沒有可顯示的檔案位置"
   },
   "es": {
     "偏好设置": "Preferencias",
@@ -2101,6 +2119,12 @@
     "网址中的 {query} 会替换为搜索词：设置别名 gh 后，在 Dock 输入「gh 关键词」即可直接搜索。": "{query} en una URL se sustituye por los términos: con el alias gh, escribe «gh términos» en el Dock para buscar directamente.",
     "常用搜索": "Búsquedas habituales",
     "百度": "Baidu",
-    "哔哩哔哩": "Bilibili"
+    "哔哩哔哩": "Bilibili",
+    "↵ 在访达中显示": "↵ Mostrar en Finder",
+    "↵ 显示文件位置": "↵ Mostrar ubicación",
+    "↵ 复制网址": "↵ Copiar URL",
+    "网址已复制": "URL copiada",
+    "无法在文件管理器中显示": "No se pudo mostrar en el gestor de archivos",
+    "该应用没有可显示的文件位置": "Esta app no tiene una ubicación de archivo"
   }
 }

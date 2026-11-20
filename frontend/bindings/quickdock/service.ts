@@ -121,6 +121,13 @@ export function RestartAfterUpdate(): $CancellablePromise<void> {
 }
 
 /**
+ * RevealApp shows the application's bundle or shortcut in the file manager.
+ */
+export function RevealApp(id: string): $CancellablePromise<void> {
+    return $Call.ByID(1432362027, id);
+}
+
+/**
  * SaveQRCode only writes to a path explicitly selected in the native save dialog.
  * An empty selection is cancellation, not an error.
  */

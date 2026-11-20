@@ -38,6 +38,7 @@ import {
 import * as bridge from "./bridge";
 import { searchEntries } from "./search";
 import { calculateSheet } from "./tools/notebook";
+import { bookmarkTarget } from "./tools/bookmarks";
 import CompactLauncher from "./CompactLauncher";
 import {
   restoredView,
@@ -266,6 +267,22 @@ export default function App() {
       notify(errorText(e));
     }
   };
+  // ⌘↵ / Ctrl+↵: reveal an app, copy a bookmark's URL; otherwise as ↵.
+  const secondary = async (r?: SearchResult) => {
+    if (!r || (r.kind !== "app" && r.kind !== "bookmark")) return execute(r);
+    setToast("");
+    try {
+      if (r.kind === "app") await bridge.revealApp(r.id);
+      else {
+        const b = data.settings.bookmarks.find((b) => b.id === r.id);
+        if (!b) return;
+        await bridge.copy(bookmarkTarget(b.url, r.value || ""));
+        notify(t("网址已复制"));
+      }
+    } catch (e) {
+      notify(errorText(e));
+    }
+  };
   useEffect(() => {
     const escape = () => {
       if (translationOpen || activeTool || page !== "launch")
@@ -320,6 +337,7 @@ export default function App() {
             selected={selected}
             setSelected={setSelected}
             execute={execute}
+            secondary={secondary}
             settings={() => navigate("settings")}
             library={() => navigate("tools")}
             expanded={expanded}

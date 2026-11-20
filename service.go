@@ -215,6 +215,27 @@ func (s *Service) Launch(id string) error {
 	s.Hide()
 	return s.RecordUsage(id)
 }
+// RevealApp shows the application's bundle or shortcut in the file manager.
+func (s *Service) RevealApp(id string) error {
+	s.mu.Lock()
+	var path string
+	for _, a := range s.apps {
+		if a.ID == id {
+			path = a.Path
+			break
+		}
+	}
+	s.mu.Unlock()
+	if path == "" {
+		return errors.New("未找到应用，请刷新索引")
+	}
+	if err := platform.RevealPath(path); err != nil {
+		return err
+	}
+	s.Hide()
+	return nil
+}
+
 // OpenBookmark opens a bookmark; query fills a search keyword's {query}.
 func (s *Service) OpenBookmark(id, query string) error {
 	s.mu.Lock()

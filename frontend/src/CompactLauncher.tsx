@@ -1,5 +1,5 @@
 import { errorText, t, useLocale } from "./i18n";
-import { commandLabel } from "./platform";
+import { commandLabel, isMac } from "./platform";
 import { useEffect, useRef } from "react";
 import {
   Search,
@@ -29,6 +29,7 @@ export default function CompactLauncher({
   selected,
   setSelected,
   execute,
+  secondary,
   settings,
   library,
   expanded,
@@ -45,6 +46,7 @@ export default function CompactLauncher({
   selected: number;
   setSelected: (n: number) => void;
   execute: (r?: SearchResult) => Promise<void>;
+  secondary: (r?: SearchResult) => Promise<void>;
   settings: () => void;
   library: () => void;
   expanded: boolean;
@@ -151,7 +153,9 @@ export default function CompactLauncher({
             }
             if (e.key === "Enter") {
               e.preventDefault();
-              void execute(visible[selected]);
+              if (isMac ? e.metaKey : e.ctrlKey)
+                void secondary(visible[selected]);
+              else void execute(visible[selected]);
             }
           }}
         />
@@ -286,6 +290,18 @@ export default function CompactLauncher({
             <LayoutGrid size={12} />
             {t("全部工具")}
           </button>
+          {searching &&
+            !translationOpen &&
+            (visible[selected]?.kind === "app" ||
+              (visible[selected]?.kind === "bookmark" &&
+                !visible[selected]?.complete)) && (
+              <kbd>
+                {commandLabel}
+                {visible[selected]?.kind === "app"
+                  ? t(isMac ? "↵ 在访达中显示" : "↵ 显示文件位置")
+                  : t("↵ 复制网址")}
+              </kbd>
+            )}
           <kbd>
             {visible[selected]?.complete && !translationOpen
               ? t("↵ 输入关键词")
