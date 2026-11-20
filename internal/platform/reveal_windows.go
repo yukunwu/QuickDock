@@ -26,4 +26,3 @@ func RevealPath(path string) error {
 	go cmd.Wait()
 	return nil
 }
-

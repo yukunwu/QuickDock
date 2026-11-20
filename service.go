@@ -215,6 +215,7 @@ func (s *Service) Launch(id string) error {
 	s.Hide()
 	return s.RecordUsage(id)
 }
+
 // RevealApp shows the application's bundle or shortcut in the file manager.
 func (s *Service) RevealApp(id string) error {
 	s.mu.Lock()
