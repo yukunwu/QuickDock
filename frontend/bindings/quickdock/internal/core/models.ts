@@ -25,6 +25,17 @@ export interface Calculation {
 }
 
 /**
+ * ClipboardEntry is one copied text. Pinned entries are kept when the history
+ * is trimmed and listed first.
+ */
+export interface ClipboardEntry {
+    "id": string;
+    "createdAt": number;
+    "text": string;
+    "pinned"?: boolean;
+}
+
+/**
  * LoginItem reports the OS login-item state; the OS is the source of truth,
  * so it is never stored in settings.json.
  */
@@ -50,6 +61,11 @@ export interface Settings {
     "shortcut": string;
     "disabledTools": string[] | null;
     "bookmarks": Bookmark[] | null;
+
+    /**
+     * Recording copied text is opt-in; the history stays on this machine.
+     */
+    "clipboardHistory"?: boolean;
 }
 
 export interface ToolWindowState {

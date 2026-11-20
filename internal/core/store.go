@@ -26,6 +26,8 @@ type Settings struct {
 	Shortcut      string     `json:"shortcut"`
 	DisabledTools []string   `json:"disabledTools"`
 	Bookmarks     []Bookmark `json:"bookmarks"`
+	// Recording copied text is opt-in; the history stays on this machine.
+	ClipboardHistory bool `json:"clipboardHistory,omitempty"`
 }
 type Usage struct {
 	Count    int   `json:"count"`
@@ -66,7 +68,7 @@ func Validate(s Settings) error {
 		return errors.New("快捷键不能为空")
 	}
 	valid := map[string]bool{}
-	for _, id := range []string{"calculator", "timestamp", "json", "base64", "url", "uuid", "hash", "units", "text", "bookmarks", "translate", "google", "qrcode", "currency"} {
+	for _, id := range []string{"calculator", "timestamp", "json", "base64", "url", "uuid", "hash", "units", "text", "bookmarks", "translate", "google", "qrcode", "currency", "clipboard"} {
 		valid[id] = true
 	}
 	for _, id := range s.DisabledTools {

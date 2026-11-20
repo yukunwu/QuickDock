@@ -25,8 +25,19 @@ export function ClearCalculations(): $CancellablePromise<void> {
     return $Call.ByID(2878727492);
 }
 
+/**
+ * ClearClipboard removes everything except pinned entries.
+ */
+export function ClearClipboard(): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(3882026572);
+}
+
 export function ClearTranslations(): $CancellablePromise<void> {
     return $Call.ByID(1621221226);
+}
+
+export function ClipboardHistory(): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(1480826563);
 }
 
 export function CloseToolWindow(id: string): $CancellablePromise<void> {
@@ -39,6 +50,10 @@ export function Copy(text: string): $CancellablePromise<void> {
 
 export function DeleteCalculation(id: string): $CancellablePromise<core$0.Calculation[] | null> {
     return $Call.ByID(3516954087, id);
+}
+
+export function DeleteClipboard(id: string): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(2591983540, id);
 }
 
 export function DeleteTranslation(id: string): $CancellablePromise<core$0.TranslationRecord[] | null> {
@@ -98,6 +113,10 @@ export function OpenToolWindow(id: string, session: string): $CancellablePromise
 
 export function OpenTranslationPage(text: string, source: string, target: string): $CancellablePromise<void> {
     return $Call.ByID(1312152035, text, source, target);
+}
+
+export function PinClipboard(id: string, pinned: boolean): $CancellablePromise<core$0.ClipboardEntry[] | null> {
+    return $Call.ByID(1623600514, id, pinned);
 }
 
 /**
@@ -192,4 +211,12 @@ export function TranslationHistory(): $CancellablePromise<core$0.TranslationReco
 
 export function UpdateStatus(): $CancellablePromise<$models.UpdateInfo> {
     return $Call.ByID(2063323406);
+}
+
+/**
+ * UseClipboard puts an entry back on the clipboard and hides the Dock, so the
+ * user can paste it into the app they came from.
+ */
+export function UseClipboard(id: string): $CancellablePromise<void> {
+    return $Call.ByID(1730480898, id);
 }

@@ -20,6 +20,7 @@ import {
   Folder,
   Code2,
   Coins,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 export type ToolID =
@@ -35,7 +36,8 @@ export type ToolID =
   | "bookmarks"
   | "translate"
   | "qrcode"
-  | "currency";
+  | "currency"
+  | "clipboard";
 export interface ToolDefinition {
   id: ToolID;
   name: string;
@@ -87,6 +89,21 @@ export const tools: ToolDefinition[] = [
       "currency exchange rate fx huilv hl huobi 汇率 货币 usd cny rmb jpy eur",
     category: "日常",
     icon: Coins,
+    color: "yellow",
+    version: "1.0.0",
+  },
+  {
+    id: "clipboard",
+    get name() {
+      return t("剪贴板历史");
+    },
+    get subtitle() {
+      return t("复制过的文本，搜索后再次粘贴");
+    },
+    keywords:
+      "clipboard paste history jianqieban jqb cb fuzhi niantie 剪贴板 复制 粘贴",
+    category: "日常",
+    icon: ClipboardList,
     color: "yellow",
     version: "1.0.0",
   },
@@ -253,6 +270,7 @@ export interface Settings {
   shortcut: string;
   disabledTools: string[];
   bookmarks: Bookmark[];
+  clipboardHistory?: boolean;
 }
 export interface Usage {
   count: number;

@@ -113,6 +113,7 @@ func main() {
 			}
 			log.Printf("shortcuts: %v", app.GlobalShortcut.GetAll())
 			service.startAppIndexMonitor()
+			go service.watchClipboard()
 		}()
 	})
 	if err := app.Run(); err != nil {

@@ -1787,3 +1787,15 @@ html[lang="es"] .compact-kind { max-width:95px; }
 .bookmark-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
 .bookmark-presets > span { font-size: 10px; color: var(--muted); margin-right: 2px; }
 .bookmark-presets .secondary { padding: 4px 9px; font-size: 10px; }
+.clipboard-recording { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.clipboard-search { margin: 18px 0 10px; }
+.clipboard-search > span { flex-shrink: 0; font-size: 10px; color: var(--muted); }
+.clipboard-list { flex: 1; min-height: 0; overflow: auto; margin-bottom: 10px; }
+.clipboard-row { display: flex; align-items: center; gap: 4px; padding: 4px 6px 4px 4px; border: 1px solid transparent; border-radius: 8px; }
+.clipboard-row.selected { background: var(--selected); border-color: var(--border); }
+.clipboard-use { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 7px 8px; text-align: left; }
+.clipboard-use strong { font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 400; white-space: pre-wrap; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.clipboard-use small { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+.clipboard-intro { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
+.clipboard-intro h3 { font-size: 14px; font-weight: 550; }
+.clipboard-intro ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 11px; color: var(--muted); }

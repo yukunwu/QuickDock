@@ -70,6 +70,7 @@ export async function setEditing(editing: boolean) {
 export async function copy(text: string) {
   if (native) return (await backend()).Copy(text);
   await navigator.clipboard.writeText(text);
+  previewRecordClipboard(text);
 }
 export async function recordUsage(id: string) {
   if (native) return (await backend()).RecordUsage(id);
@@ -463,4 +464,71 @@ export async function setLaunchAtLogin(enabled: boolean): Promise<LoginItem> {
 }
 export async function openLoginItemSettings() {
   if (native) await (await backend()).OpenLoginItemSettings();
+}
+
+export type ClipboardEntry = {
+  id: string;
+  createdAt: number;
+  text: string;
+  pinned?: boolean;
+};
+// The browser preview cannot watch the system clipboard; it keeps what
+// QuickDock itself copies so the history page can be exercised.
+const clipboardKey = "quickdock-preview-clipboard";
+function previewClipboard(): ClipboardEntry[] {
+  try {
+    const state = JSON.parse(localStorage.getItem(clipboardKey) || "null");
+    return state?.version === 1 && Array.isArray(state.records)
+      ? state.records
+      : [];
+  } catch {
+    return [];
+  }
+}
+function storePreviewClipboard(records: ClipboardEntry[]) {
+  localStorage.setItem(
+    clipboardKey,
+    JSON.stringify({ version: 1, records: records.slice(0, 200) }),
+  );
+  window.dispatchEvent(new Event("quickdock-clipboard-history"));
+  return records;
+}
+export function previewRecordClipboard(text: string) {
+  if (native || !demoSettings.clipboardHistory || !text.trim()) return;
+  const old = previewClipboard();
+  const same = old.find((r) => r.text === text);
+  storePreviewClipboard([
+    {
+      id: same?.id || crypto.randomUUID(),
+      createdAt: Date.now(),
+      text,
+      pinned: same?.pinned,
+    },
+    ...old.filter((r) => r.text !== text),
+  ]);
+}
+export async function clipboardHistory(): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).ClipboardHistory()) || [];
+  return previewClipboard();
+}
+export async function deleteClipboard(id: string): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).DeleteClipboard(id)) || [];
+  return storePreviewClipboard(previewClipboard().filter((r) => r.id !== id));
+}
+export async function pinClipboard(
+  id: string,
+  pinned: boolean,
+): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).PinClipboard(id, pinned)) || [];
+  return storePreviewClipboard(
+    previewClipboard().map((r) => (r.id === id ? { ...r, pinned } : r)),
+  );
+}
+export async function clearClipboard(): Promise<ClipboardEntry[]> {
+  if (native) return (await (await backend()).ClearClipboard()) || [];
+  return storePreviewClipboard(previewClipboard().filter((r) => r.pinned));
+}
+export async function restoreClipboard(entry: ClipboardEntry) {
+  if (native) return (await backend()).UseClipboard(entry.id);
+  await copy(entry.text);
 }

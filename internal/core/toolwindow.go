@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var ToolTitles = map[string]string{"qrcode": "二维码生成器", "calculator": "计算稿纸", "json": "JSON 格式化", "timestamp": "时间与时区", "currency": "汇率换算", "base64": "Base64", "url": "URL 编解码", "uuid": "UUID 生成", "hash": "文本哈希", "units": "单位换算", "text": "文本处理", "bookmarks": "常用网址", "translate": "翻译"}
+var ToolTitles = map[string]string{"qrcode": "二维码生成器", "calculator": "计算稿纸", "json": "JSON 格式化", "timestamp": "时间与时区", "currency": "汇率换算", "base64": "Base64", "url": "URL 编解码", "uuid": "UUID 生成", "hash": "文本哈希", "units": "单位换算", "text": "文本处理", "bookmarks": "常用网址", "translate": "翻译", "clipboard": "剪贴板历史"}
 
 type ToolWindowState struct {
 	Version    int    `json:"version"`
