@@ -24,6 +24,16 @@ export interface Calculation {
     "results": string[] | null;
 }
 
+/**
+ * LoginItem reports the OS login-item state; the OS is the source of truth,
+ * so it is never stored in settings.json.
+ */
+export interface LoginItem {
+    "supported": boolean;
+    "enabled": boolean;
+    "needsApproval": boolean;
+}
+
 export interface Rates {
     "base": string;
     "date": string;

@@ -1781,3 +1781,5 @@ html[lang="es"] .compact-kind { max-width:95px; }
 /* Allow translated navigation labels to wrap inside the fixed sidebar. */
 .macos .nav-item { white-space:normal; min-height:40px; height:auto; padding-top:9px; padding-bottom:9px; line-height:1.35; }
 .macos .nav-item > svg, .macos .nav-item > .count { flex-shrink:0; }
+
+.setting-inline-action { margin-top: 8px; }

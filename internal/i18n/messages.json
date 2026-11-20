@@ -505,7 +505,17 @@
     "载入翻译 {text}": "Load translation {text}",
     "翻译内容须为1～5000字符": "Text to translate must be 1–5000 characters",
     "翻译服务返回了无法识别的结果": "The translation service returned an unrecognized result",
-    "请选择有效语言": "Choose a valid language"
+    "请选择有效语言": "Choose a valid language",
+    "开机自动启动": "Launch at login",
+    "当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹": "This installation can't launch at login. Move QuickDock to the Applications folder first.",
+    "请在桌面版中设置开机启动": "Set launch at login in the desktop app",
+    "需要在系统设置的“登录项”中允许 QuickDock": "Allow QuickDock under Login Items in System Settings",
+    "登录后在后台启动，不弹出窗口": "Starts in the background after you log in, without showing a window",
+    "打开登录项设置": "Open Login Items settings",
+    "已开启开机自动启动": "Launch at login turned on",
+    "已关闭开机自动启动": "Launch at login turned off",
+    "开机启动设置失败": "Couldn't change launch at login",
+    "无法写入Windows启动项": "Couldn't write the Windows startup entry"
   },
   "ja": {
     "偏好设置": "環境設定",
@@ -1013,7 +1023,17 @@
     "载入翻译 {text}": "翻訳 {text} を読み込む",
     "翻译内容须为1～5000字符": "翻訳する内容は1～5000文字にしてください",
     "翻译服务返回了无法识别的结果": "翻訳サービスから認識できない結果が返されました",
-    "请选择有效语言": "有効な言語を選択してください"
+    "请选择有效语言": "有効な言語を選択してください",
+    "开机自动启动": "ログイン時に起動",
+    "当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹": "この配置ではログイン時に起動できません。QuickDock を「アプリケーション」フォルダへ移動してください。",
+    "请在桌面版中设置开机启动": "ログイン時の起動はデスクトップ版で設定してください",
+    "需要在系统设置的“登录项”中允许 QuickDock": "システム設定の「ログイン項目」で QuickDock を許可してください",
+    "登录后在后台启动，不弹出窗口": "ログイン後にウインドウを表示せずバックグラウンドで起動します",
+    "打开登录项设置": "ログイン項目の設定を開く",
+    "已开启开机自动启动": "ログイン時の起動をオンにしました",
+    "已关闭开机自动启动": "ログイン時の起動をオフにしました",
+    "开机启动设置失败": "ログイン時の起動を変更できませんでした",
+    "无法写入Windows启动项": "Windows のスタートアップ項目を書き込めません"
   },
   "zh-TW": {
     "偏好设置": "偏好設定",
@@ -1521,7 +1541,17 @@
     "载入翻译 {text}": "載入翻譯 {text}",
     "翻译内容须为1～5000字符": "翻譯內容須為1～5000字元",
     "翻译服务返回了无法识别的结果": "翻譯服務傳回了無法識別的結果",
-    "请选择有效语言": "請選擇有效語言"
+    "请选择有效语言": "請選擇有效語言",
+    "开机自动启动": "開機自動啟動",
+    "当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹": "目前安裝方式不支援開機啟動，請先將 QuickDock 移到「應用程式」檔案夾",
+    "请在桌面版中设置开机启动": "請在桌面版中設定開機啟動",
+    "需要在系统设置的“登录项”中允许 QuickDock": "需要在系統設定的「登入項目」中允許 QuickDock",
+    "登录后在后台启动，不弹出窗口": "登入後在背景啟動，不彈出視窗",
+    "打开登录项设置": "打開登入項目設定",
+    "已开启开机自动启动": "已開啟開機自動啟動",
+    "已关闭开机自动启动": "已關閉開機自動啟動",
+    "开机启动设置失败": "開機啟動設定失敗",
+    "无法写入Windows启动项": "無法寫入 Windows 啟動項"
   },
   "es": {
     "偏好设置": "Preferencias",
@@ -2029,6 +2059,16 @@
     "载入翻译 {text}": "Cargar traducción {text}",
     "翻译内容须为1～5000字符": "El texto debe tener entre 1 y 5000 caracteres",
     "翻译服务返回了无法识别的结果": "El servicio de traducción devolvió un resultado no reconocido",
-    "请选择有效语言": "Elige un idioma válido"
+    "请选择有效语言": "Elige un idioma válido",
+    "开机自动启动": "Abrir al iniciar sesión",
+    "当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹": "Esta instalación no puede abrirse al iniciar sesión. Mueve QuickDock a la carpeta Aplicaciones.",
+    "请在桌面版中设置开机启动": "Configura el inicio de sesión en la app de escritorio",
+    "需要在系统设置的“登录项”中允许 QuickDock": "Permite QuickDock en Ítems de inicio de Ajustes del Sistema",
+    "登录后在后台启动，不弹出窗口": "Se inicia en segundo plano al iniciar sesión, sin mostrar ventana",
+    "打开登录项设置": "Abrir ajustes de ítems de inicio",
+    "已开启开机自动启动": "Inicio al iniciar sesión activado",
+    "已关闭开机自动启动": "Inicio al iniciar sesión desactivado",
+    "开机启动设置失败": "No se pudo cambiar el inicio al iniciar sesión",
+    "无法写入Windows启动项": "No se pudo escribir la entrada de inicio de Windows"
   }
 }

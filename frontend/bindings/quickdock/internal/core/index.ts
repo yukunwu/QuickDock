@@ -5,6 +5,7 @@ export type {
     AppEntry,
     Bookmark,
     Calculation,
+    LoginItem,
     Rates,
     Settings,
     ToolWindowState,

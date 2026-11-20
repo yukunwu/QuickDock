@@ -2,6 +2,7 @@ import { errorText, t, t as translate, useLocale } from "./i18n";
 import ShortcutPicker from "./ShortcutPicker";
 import { languages } from "./i18n";
 import { Suspense, lazy, useState, useEffect } from "react";
+import * as bridge from "./bridge";
 import { Monitor, Sun, Moon, RefreshCw, Zap } from "lucide-react";
 import {
   tools,
@@ -107,6 +108,7 @@ export default function SettingsPage({
             save={(shortcut) => save({ ...data.settings, shortcut })}
           />
         </div>
+        <LoginItemRow notify={notify} />
         <div className="setting-row">
           <div>
             <strong>{t("应用索引")}</strong>
@@ -182,6 +184,74 @@ export default function SettingsPage({
         </div>
         <span>{t("工具数据保存在本机")}</span>
       </div>
+    </div>
+  );
+}
+
+function LoginItemRow({ notify }: { notify: (s: string) => void }) {
+  useLocale();
+  const [item, setItem] = useState<bridge.LoginItem | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const load = () =>
+      void bridge
+        .loginItem()
+        .then(setItem)
+        .catch(() => setItem(null));
+    load();
+    // Approval happens in System Settings; re-read when the user comes back.
+    window.addEventListener("focus", load);
+    return () => window.removeEventListener("focus", load);
+  }, []);
+  const on = !!item && (item.enabled || item.needsApproval);
+  return (
+    <div className="setting-row">
+      <div>
+        <strong>{t("开机自动启动")}</strong>
+        <p>
+          {!item?.supported
+            ? bridge.native
+              ? t("当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹")
+              : t("请在桌面版中设置开机启动")
+            : item.needsApproval
+              ? t("需要在系统设置的“登录项”中允许 QuickDock")
+              : t("登录后在后台启动，不弹出窗口")}
+        </p>
+        {item?.needsApproval && (
+          <button
+            className="secondary setting-inline-action"
+            onClick={() => void bridge.openLoginItemSettings()}
+          >
+            {t("打开登录项设置")}
+          </button>
+        )}
+      </div>
+      <button
+        role="switch"
+        aria-label={t("开机自动启动")}
+        aria-checked={on}
+        disabled={busy || !item?.supported}
+        className={`switch ${on ? "on" : ""}`}
+        onClick={() => {
+          setBusy(true);
+          bridge
+            .setLaunchAtLogin(!on)
+            .then((next) => {
+              setItem(next);
+              notify(
+                next.needsApproval
+                  ? t("需要在系统设置的“登录项”中允许 QuickDock")
+                  : next.enabled
+                    ? t("已开启开机自动启动")
+                    : t("已关闭开机自动启动"),
+              );
+            })
+            .catch((e) => notify(errorText(e)))
+            .finally(() => setBusy(false));
+        }}
+      >
+        <span />
+      </button>
     </div>
   );
 }

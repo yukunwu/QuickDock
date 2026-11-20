@@ -73,12 +73,20 @@ export function Launch(id: string): $CancellablePromise<void> {
     return $Call.ByID(1184620374, id);
 }
 
+export function LoginItem(): $CancellablePromise<core$0.LoginItem> {
+    return $Call.ByID(2067054041);
+}
+
 export function OpenBookmark(id: string): $CancellablePromise<void> {
     return $Call.ByID(3635377621, id);
 }
 
 export function OpenGoogleSearch(query: string): $CancellablePromise<void> {
     return $Call.ByID(1794324386, query);
+}
+
+export function OpenLoginItemSettings(): $CancellablePromise<void> {
+    return $Call.ByID(4179736288);
 }
 
 export function OpenToolWindow(id: string, session: string): $CancellablePromise<void> {
@@ -127,6 +135,14 @@ export function SaveToolWindow(id: string, session: string): $CancellablePromise
 
 export function SetEditing(editing: boolean): $CancellablePromise<void> {
     return $Call.ByID(519304937, editing);
+}
+
+/**
+ * SetLaunchAtLogin returns the state the OS reports afterwards; macOS may
+ * keep a registration pending until the user approves it in System Settings.
+ */
+export function SetLaunchAtLogin(enabled: boolean): $CancellablePromise<core$0.LoginItem> {
+    return $Call.ByID(2589224526, enabled);
 }
 
 /**

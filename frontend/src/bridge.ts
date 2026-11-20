@@ -442,3 +442,20 @@ export async function saveQRCode(
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   return true;
 }
+
+export type LoginItem = {
+  supported: boolean;
+  enabled: boolean;
+  needsApproval: boolean;
+};
+export async function loginItem(): Promise<LoginItem> {
+  if (native) return (await backend()).LoginItem() as Promise<LoginItem>;
+  return { supported: false, enabled: false, needsApproval: false };
+}
+export async function setLaunchAtLogin(enabled: boolean): Promise<LoginItem> {
+  if (!native) throw Error("请在桌面版中设置开机启动");
+  return (await backend()).SetLaunchAtLogin(enabled) as Promise<LoginItem>;
+}
+export async function openLoginItemSettings() {
+  if (native) await (await backend()).OpenLoginItemSettings();
+}
