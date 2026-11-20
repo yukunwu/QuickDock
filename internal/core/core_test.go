@@ -173,3 +173,22 @@ func TestDesktopSearchAliasesRetainOriginalAndOtherLanguageNames(t *testing.T) {
 		t.Fatal(english, err)
 	}
 }
+func TestBookmarkSearchKeyword(t *testing.T) {
+	target, err := BookmarkTarget("https://github.com/search?q={query}&type=repositories", "rust & go+c#")
+	if err != nil || target != "https://github.com/search?q=rust%20%26%20go%2Bc%23&type=repositories" {
+		t.Fatal(target, err)
+	}
+	if target, err = BookmarkTarget("https://en.wikipedia.org/wiki/{query}", "中文 a/b"); err != nil || target != "https://en.wikipedia.org/wiki/%E4%B8%AD%E6%96%87%20a%2Fb" {
+		t.Fatal(target, err)
+	}
+	for _, raw := range []string{"https://{query}.example.com/", "javascript:{query}"} {
+		if _, err := BookmarkTarget(raw, "x"); err == nil {
+			t.Fatal("accepted", raw)
+		}
+	}
+	s := Defaults().Settings
+	s.Bookmarks = []Bookmark{{ID: "gh", Name: "GitHub", URL: "https://github.com/search?q={query}", Alias: "gh"}}
+	if err := Validate(s); err != nil {
+		t.Fatal(err)
+	}
+}

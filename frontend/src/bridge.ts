@@ -1,4 +1,5 @@
 import { parseRates, ratesURL, type Rates } from "./tools/currency";
+import { bookmarkTarget } from "./tools/bookmarks";
 import {
   defaults,
   previewApps,
@@ -46,11 +47,11 @@ export async function launch(id: string): Promise<void> {
   if (native) return (await backend()).Launch(id);
   throw new Error("浏览器预览不能启动本机应用，请在 QuickDock 桌面版中使用。");
 }
-export async function openBookmark(id: string): Promise<void> {
-  if (native) return (await backend()).OpenBookmark(id);
+export async function openBookmark(id: string, query = ""): Promise<void> {
+  if (native) return (await backend()).OpenBookmark(id, query);
   const b = demoSettings.bookmarks.find((b) => b.id === id);
   if (!b) throw new Error("网址不存在");
-  const url = new URL(b.url);
+  const url = new URL(bookmarkTarget(b.url, query));
   if (!["https:", "http:"].includes(url.protocol))
     throw new Error("不支持的网址协议");
   window.open(url.href, "_blank", "noopener,noreferrer");

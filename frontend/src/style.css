@@ -1783,3 +1783,7 @@ html[lang="es"] .compact-kind { max-width:95px; }
 .macos .nav-item > svg, .macos .nav-item > .count { flex-shrink:0; }
 
 .setting-inline-action { margin-top: 8px; }
+.bookmark-hint { font-size: 10px; color: var(--muted); line-height: 1.5; margin: -6px 0 10px; }
+.bookmark-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.bookmark-presets > span { font-size: 10px; color: var(--muted); margin-right: 2px; }
+.bookmark-presets .secondary { padding: 4px 9px; font-size: 10px; }

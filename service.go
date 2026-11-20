@@ -215,17 +215,19 @@ func (s *Service) Launch(id string) error {
 	s.Hide()
 	return s.RecordUsage(id)
 }
-func (s *Service) OpenBookmark(id string) error {
+// OpenBookmark opens a bookmark; query fills a search keyword's {query}.
+func (s *Service) OpenBookmark(id, query string) error {
 	s.mu.Lock()
-	var target string
+	var raw string
 	for _, b := range s.state.Settings.Bookmarks {
 		if b.ID == id {
-			target = b.URL
+			raw = b.URL
 			break
 		}
 	}
 	s.mu.Unlock()
-	if err := core.ValidateURL(target); err != nil {
+	target, err := core.BookmarkTarget(raw, query)
+	if err != nil {
 		return err
 	}
 	if err := application.InvokeSyncWithError(func() error { return platform.Open(target, false) }); err != nil {

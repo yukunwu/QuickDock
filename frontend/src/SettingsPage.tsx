@@ -211,7 +211,9 @@ function LoginItemRow({ notify }: { notify: (s: string) => void }) {
         <p>
           {!item?.supported
             ? bridge.native
-              ? t("当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹")
+              ? t(
+                  "当前安装方式不支持开机启动，请先将 QuickDock 移到应用程序文件夹",
+                )
               : t("请在桌面版中设置开机启动")
             : item.needsApproval
               ? t("需要在系统设置的“登录项”中允许 QuickDock")

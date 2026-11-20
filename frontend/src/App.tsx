@@ -227,6 +227,11 @@ export default function App() {
   const execute = async (r?: SearchResult) => {
     if (!r) return;
     setToast("");
+    if (r.complete) {
+      setQuery(r.complete);
+      setSelected(0);
+      return;
+    }
     try {
       if (r.kind === "websearch") {
         await bridge.openGoogleSearch(r.value || query);
@@ -239,7 +244,8 @@ export default function App() {
         setActiveTool(r.id as ToolID);
         await bridge.recordUsage(r.id);
       } else if (r.kind === "app") await bridge.launch(r.id);
-      else if (r.kind === "bookmark") await bridge.openBookmark(r.id);
+      else if (r.kind === "bookmark")
+        await bridge.openBookmark(r.id, r.value || "");
       else {
         await bridge.copy(r.value || "");
         notify(r.kind === "time" ? t("已复制") : t("计算结果已复制"));

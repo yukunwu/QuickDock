@@ -282,6 +282,8 @@ export interface SearchResult {
   color: string;
   image?: string;
   value?: string;
+  // Selecting the row fills the search box instead, e.g. a keyword's "gh ".
+  complete?: string;
 }
 export const fallbackIcons: Record<string, LucideIcon> = {
   Finder: Folder,

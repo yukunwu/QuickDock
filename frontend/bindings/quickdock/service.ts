@@ -77,8 +77,11 @@ export function LoginItem(): $CancellablePromise<core$0.LoginItem> {
     return $Call.ByID(2067054041);
 }
 
-export function OpenBookmark(id: string): $CancellablePromise<void> {
-    return $Call.ByID(3635377621, id);
+/**
+ * OpenBookmark opens a bookmark; query fills a search keyword's {query}.
+ */
+export function OpenBookmark(id: string, query: string): $CancellablePromise<void> {
+    return $Call.ByID(3635377621, id, query);
 }
 
 export function OpenGoogleSearch(query: string): $CancellablePromise<void> {

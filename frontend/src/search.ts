@@ -18,6 +18,11 @@ import {
   NotebookPen,
 } from "lucide-react";
 import {
+  bookmarkKeywords,
+  bookmarkTarget,
+  isSearchKeyword,
+} from "./tools/bookmarks";
+import {
   formatZoned,
   localZone,
   offsetLabel,
@@ -180,14 +185,20 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
     ...(data.settings.disabledTools.includes("bookmarks")
       ? []
       : data.settings.bookmarks
-    ).map((b) => ({
-      id: b.id,
-      title: b.name,
-      subtitle: b.url,
-      kind: "bookmark" as const,
-      icon: Globe,
-      color: "purple",
-    })),
+    ).map((b) => {
+      const keyword = isSearchKeyword(b) ? bookmarkKeywords(b)[0] : "";
+      return {
+        id: b.id,
+        title: b.name,
+        subtitle: keyword
+          ? t("输入「{keyword} 关键词」直接搜索", { keyword })
+          : b.url,
+        kind: "bookmark" as const,
+        icon: Globe,
+        color: "purple",
+        complete: keyword ? keyword + " " : undefined,
+      };
+    }),
   ];
   const appAliases = new Map(
     apps.map((app) => [app.id, applicationAliases(app)]),
@@ -308,7 +319,31 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
       /* Invalid dates fall back to normal search. */
     }
   }
+  // "gh rust": the first word names a search keyword, the rest is the query.
+  const keywordQuery = /^(\S+)\s+(\S[\s\S]*)$/.exec(query.trim());
+  const keywordSearch: SearchResult[] =
+    keywordQuery && enabled("bookmarks")
+      ? data.settings.bookmarks
+          .filter(
+            (b) =>
+              isSearchKeyword(b) &&
+              bookmarkKeywords(b).includes(fold(keywordQuery[1])),
+          )
+          .map((b) => ({
+            id: b.id,
+            title: t("在 {name} 中搜索「{query}」", {
+              name: b.name,
+              query: keywordQuery[2],
+            }),
+            subtitle: bookmarkTarget(b.url, keywordQuery[2]),
+            kind: "bookmark" as const,
+            icon: Search,
+            color: "purple",
+            value: keywordQuery[2],
+          }))
+      : [];
   const matched: SearchResult[] = [
+    ...keywordSearch,
     ...time,
     ...calculation,
     ...ranked.map((e) => e.r),
@@ -343,7 +378,8 @@ export function searchEntries(query: string, data: Snapshot): SearchResult[] {
       else online.push(translation);
     }
   }
-  if (intent === "translation") return [...online, ...matched];
+  if (intent === "translation" && !keywordSearch.length)
+    return [...online, ...matched];
   matched.push(...online);
   return matched;
 }

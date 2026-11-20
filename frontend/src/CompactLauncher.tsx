@@ -145,6 +145,10 @@ export default function CompactLauncher({
                 Math.max(0, Math.min(selected + delta, visible.length - 1)),
               );
             }
+            if (e.key === "Tab" && visible[selected]?.complete) {
+              e.preventDefault();
+              void execute(visible[selected]);
+            }
             if (e.key === "Enter") {
               e.preventDefault();
               void execute(visible[selected]);
@@ -245,7 +249,9 @@ export default function CompactLauncher({
                         : r.kind === "tool"
                           ? t("工具")
                           : r.kind === "bookmark"
-                            ? t("网址")
+                            ? r.value !== undefined
+                              ? t("搜索")
+                              : t("网址")
                             : r.kind === "websearch"
                               ? t("搜索")
                               : r.kind === "translation"
@@ -281,12 +287,14 @@ export default function CompactLauncher({
             {t("全部工具")}
           </button>
           <kbd>
-            {translationOpen || visible[selected]?.kind === "translation"
-              ? t("↵ 翻译")
-              : visible[selected]?.kind === "calculation" ||
-                  visible[selected]?.kind === "time"
-                ? t("↵ 复制")
-                : t("↵ 打开")}
+            {visible[selected]?.complete && !translationOpen
+              ? t("↵ 输入关键词")
+              : translationOpen || visible[selected]?.kind === "translation"
+                ? t("↵ 翻译")
+                : visible[selected]?.kind === "calculation" ||
+                    visible[selected]?.kind === "time"
+                  ? t("↵ 复制")
+                  : t("↵ 打开")}
           </kbd>
           <kbd>{translationOpen ? t("esc 返回") : t("esc 隐藏")}</kbd>
         </span>
