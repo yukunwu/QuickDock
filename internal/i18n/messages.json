@@ -529,7 +529,8 @@
     "↵ 复制网址": "↵ Copy URL",
     "网址已复制": "URL copied",
     "无法在文件管理器中显示": "Couldn't show it in the file manager",
-    "该应用没有可显示的文件位置": "This app has no file location to show"
+    "该应用没有可显示的文件位置": "This app has no file location to show",
+    "应用入口已移动或删除，请刷新索引": "The app entry was moved or deleted. Refresh the index."
   },
   "ja": {
     "偏好设置": "環境設定",
@@ -1061,7 +1062,8 @@
     "↵ 复制网址": "↵ URL をコピー",
     "网址已复制": "URL をコピーしました",
     "无法在文件管理器中显示": "ファイルマネージャで表示できません",
-    "该应用没有可显示的文件位置": "このアプリには表示できるファイルの場所がありません"
+    "该应用没有可显示的文件位置": "このアプリには表示できるファイルの場所がありません",
+    "应用入口已移动或删除，请刷新索引": "アプリの項目が移動または削除されました。インデックスを更新してください。"
   },
   "zh-TW": {
     "偏好设置": "偏好設定",
@@ -1593,7 +1595,8 @@
     "↵ 复制网址": "↵ 複製網址",
     "网址已复制": "網址已複製",
     "无法在文件管理器中显示": "無法在檔案管理器中顯示",
-    "该应用没有可显示的文件位置": "此 App 沒有可顯示的檔案位置"
+    "该应用没有可显示的文件位置": "此 App 沒有可顯示的檔案位置",
+    "应用入口已移动或删除，请刷新索引": "App 項目已移動或刪除，請重新整理索引"
   },
   "es": {
     "偏好设置": "Preferencias",
@@ -2125,6 +2128,7 @@
     "↵ 复制网址": "↵ Copiar URL",
     "网址已复制": "URL copiada",
     "无法在文件管理器中显示": "No se pudo mostrar en el gestor de archivos",
-    "该应用没有可显示的文件位置": "Esta app no tiene una ubicación de archivo"
+    "该应用没有可显示的文件位置": "Esta app no tiene una ubicación de archivo",
+    "应用入口已移动或删除，请刷新索引": "La entrada de la app se movió o eliminó. Actualiza el índice."
   }
 }
