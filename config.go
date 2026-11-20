@@ -14,7 +14,7 @@ func (s *Service) ExportConfig(raw string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	path, err := s.app.Dialog.SaveFile().SetFilename("QuickDock-" + time.Now().Format("20060102") + ".json").AddFilter("JSON", "*.json").CanCreateDirectories(true).PromptForSingleSelection()
+	path, err := s.app.Dialog.SaveFile().SetFilename("QuickDock-"+time.Now().Format("20060102")+".json").AddFilter("JSON", "*.json").CanCreateDirectories(true).PromptForSingleSelection()
 	if err != nil || path == "" {
 		return false, err
 	}
